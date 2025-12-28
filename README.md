@@ -61,6 +61,16 @@ npm start
 
 - `POST /generate-xml` - Generate CBAM compliance report
 
+
+## 🔭 Live Demo
+
+- **Frontend (GitHub Pages):** https://arrya5.github.io/cbam-full-app/  
+  ![Pages](https://github.com/arrya5/cbam-full-app/actions/workflows/gh-pages.yml/badge.svg)
+
+- **Backend (Render):** https://cbam-full-app.onrender.com/  
+  (API docs: https://cbam-full-app.onrender.com/docs)
+
+
 ## 📄 License
 
 MIT
