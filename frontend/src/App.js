@@ -25,8 +25,8 @@ function App() {
     try {
       // 1. Send data to your Python Backend
       // Ensure your backend is running on port 8000!
-      const response = await axios.post('http://127.0.0.1:8000/generate-xml', formData, {
-        responseType: 'blob', // IMPORTANT: Tells Axios to treat response as a file
+      const response = await axios.post('https://cbam-full-app.onrender.com/generate-xml', formData, {
+        responseType: 'blob', // IMPORTANT: Keep this so the file downloads!
       });
 
       // 2. Create a hidden download link and click it
