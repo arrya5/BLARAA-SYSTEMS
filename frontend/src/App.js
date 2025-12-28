@@ -181,43 +181,153 @@ const LandingPage = ({ onLaunch }) => (
   </div>
 );
 
-// 4. The Dashboard (Same as before)
+// 4. The Dashboard (UPDATED WITH ABOUT SECTION)
 const Dashboard = ({ formData, setFormData, loading, status, onSubmit, onChange }) => (
   <div className="animate-in slide-in-from-bottom-4 duration-500 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
     <div className="lg:grid lg:grid-cols-12 lg:gap-16 items-start">
-      <div className="lg:col-span-4 mb-10 lg:mb-0 space-y-6">
+      
+      {/* LEFT COLUMN: The "About / Logic" Section */}
+      <div className="lg:col-span-5 mb-10 lg:mb-0 space-y-8">
+        
+        {/* Title Block */}
         <div>
-           <span className="text-blue-600 font-bold tracking-wide text-sm">PRODUCT: CBAM PRO</span>
-           <h2 className="text-3xl font-extrabold text-slate-900 mt-2">New Compliance Filing</h2>
-           <p className="text-slate-600 mt-4">Enter factory production data below. The engine will calculate specific embedded emissions and generate the XML.</p>
+           <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded uppercase tracking-wide">
+             CBAM Pro • v1.0
+           </span>
+           <h2 className="text-3xl font-extrabold text-slate-900 mt-4">
+             EU Compliance Engine
+           </h2>
+           <p className="text-slate-600 mt-4 text-lg leading-relaxed">
+             This platform automates the carbon reporting workflow for Indian exporters, ensuring 100% compliance with EU standards.
+           </p>
         </div>
-        <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl">
-           <div className="flex items-center gap-2 mb-2"><ShieldCheck className="h-5 w-5 text-blue-700" /><span className="font-bold text-blue-800 text-sm">Secure Environment</span></div>
-           <p className="text-xs text-blue-600">Data is encrypted and logged to the BLARAA Audit Vault.</p>
+
+        {/* How It Works Guide */}
+        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 space-y-6">
+          <h3 className="text-sm font-bold text-slate-900 uppercase tracking-widest border-b border-slate-200 pb-2">
+            System Workflow
+          </h3>
+          
+          {/* Step 1 */}
+          <div className="flex gap-4">
+            <div className="bg-white p-2 rounded-lg border border-slate-200 h-fit shadow-sm">
+              <Factory className="h-5 w-5 text-slate-500" />
+            </div>
+            <div>
+              <h4 className="font-bold text-slate-900 text-sm">1. Data Ingestion</h4>
+              <p className="text-xs text-slate-500 mt-1">
+                The user inputs raw factory metrics (Coal, Electricity, Production).
+              </p>
+            </div>
+          </div>
+
+          {/* Step 2 */}
+          <div className="flex gap-4">
+            <div className="bg-white p-2 rounded-lg border border-slate-200 h-fit shadow-sm">
+              <Zap className="h-5 w-5 text-yellow-600" />
+            </div>
+            <div>
+              <h4 className="font-bold text-slate-900 text-sm">2. Emission Calculation</h4>
+              <p className="text-xs text-slate-500 mt-1">
+                The Python backend calculates <strong>Specific Embedded Emissions</strong> using standard CEA & EU factors.
+              </p>
+            </div>
+          </div>
+
+          {/* Step 3 */}
+          <div className="flex gap-4">
+            <div className="bg-white p-2 rounded-lg border border-slate-200 h-fit shadow-sm">
+              <FileCheck className="h-5 w-5 text-green-600" />
+            </div>
+            <div>
+              <h4 className="font-bold text-slate-900 text-sm">3. XML Generation</h4>
+              <p className="text-xs text-slate-500 mt-1">
+                The engine generates a valid <strong>Q4 Report XML</strong> file ready for the EU Transitional Registry.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Security Badge */}
+        <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl flex items-start gap-3">
+           <ShieldCheck className="h-5 w-5 text-blue-700 shrink-0 mt-0.5" />
+           <div>
+             <span className="font-bold text-blue-800 text-sm block">Audit Trail Active</span>
+             <p className="text-xs text-blue-600 mt-1">
+               Every report generated here is timestamped and logged to the "Glass Box" vault for legal verification.
+             </p>
+           </div>
         </div>
       </div>
-      <div className="lg:col-span-8">
+
+      {/* RIGHT COLUMN: The Form (Generator) */}
+      <div className="lg:col-span-7">
         <div className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
+          <div className="bg-slate-900 px-8 py-4 border-b border-slate-800 flex justify-between items-center">
+            <h3 className="text-white font-bold flex items-center gap-2">
+              <Download className="h-4 w-4 text-blue-400" /> Generator Panel
+            </h3>
+            <span className="text-slate-500 text-xs font-mono">SECURE_CONNECTION: TLS 1.3</span>
+          </div>
+          
           <form onSubmit={onSubmit} className="p-8 space-y-8">
+            {/* Organization Section */}
             <div className="space-y-4">
-               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2"><Factory className="h-4 w-4" /> Organization</h3>
+               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                 <Globe className="h-4 w-4" /> Organization Details
+               </h3>
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                 <input name="company_name" required placeholder="Company Name" value={formData.company_name} onChange={onChange} className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none" />
-                 <input name="company_id" required placeholder="IE Code / Tax ID" value={formData.company_id} onChange={onChange} className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none" />
+                 <input name="company_name" required placeholder="Company Name" value={formData.company_name} onChange={onChange} className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none transition" />
+                 <input name="company_id" required placeholder="IE Code / Tax ID" value={formData.company_id} onChange={onChange} className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none transition" />
                </div>
-               <input name="city" required placeholder="City" value={formData.city} onChange={onChange} className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none" />
+                 <input name="city" required placeholder="Factory City / Location" value={formData.city} onChange={onChange} className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none transition" />
             </div>
+            
             <hr className="border-slate-100" />
+
+            {/* Metrics Section */}
             <div className="space-y-4">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2"><Flame className="h-4 w-4" /> Production Metrics</h3>
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                <Flame className="h-4 w-4" /> Production Metrics (Monthly)
+              </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                 <div className="relative"><label className="text-xs font-medium text-slate-500">Total Production</label><input name="production_tonnes" type="number" step="0.01" required value={formData.production_tonnes} onChange={onChange} className="w-full mt-1 px-3 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none" /></div>
-                 <div className="relative"><label className="text-xs font-medium text-slate-500">Coal Used (Tonnes)</label><input name="coal_tonnes" type="number" step="0.01" required value={formData.coal_tonnes} onChange={onChange} className="w-full mt-1 px-3 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none" /></div>
-                 <div className="relative"><label className="text-xs font-medium text-slate-500">Electricity (kWh)</label><input name="electricity_kwh" type="number" step="0.01" required value={formData.electricity_kwh} onChange={onChange} className="w-full mt-1 px-3 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none" /></div>
+                 <div className="relative">
+                   <label className="text-[10px] font-bold text-slate-500 uppercase">Total Production</label>
+                   <div className="relative">
+                      <input name="production_tonnes" type="number" step="0.01" required value={formData.production_tonnes} onChange={onChange} className="w-full mt-1 pl-3 pr-8 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none font-mono" />
+                      <span className="absolute right-3 top-4 text-xs text-slate-400 font-bold">T</span>
+                   </div>
+                 </div>
+                 <div className="relative">
+                   <label className="text-[10px] font-bold text-slate-500 uppercase">Coal Consumed</label>
+                   <div className="relative">
+                      <input name="coal_tonnes" type="number" step="0.01" required value={formData.coal_tonnes} onChange={onChange} className="w-full mt-1 pl-3 pr-8 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none font-mono" />
+                      <span className="absolute right-3 top-4 text-xs text-slate-400 font-bold">T</span>
+                   </div>
+                 </div>
+                 <div className="relative">
+                   <label className="text-[10px] font-bold text-slate-500 uppercase">Electricity</label>
+                   <div className="relative">
+                      <input name="electricity_kwh" type="number" step="0.01" required value={formData.electricity_kwh} onChange={onChange} className="w-full mt-1 pl-3 pr-8 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none font-mono" />
+                      <span className="absolute right-3 top-4 text-xs text-slate-400 font-bold">kWh</span>
+                   </div>
+                 </div>
               </div>
             </div>
-            <button type="submit" disabled={loading} className={`w-full py-4 rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-all ${loading ? 'bg-slate-100 text-slate-400' : 'bg-slate-900 text-white hover:bg-slate-800'}`}>{loading ? 'Processing...' : <><Download className="h-5 w-5" /> Generate Report</>}</button>
-            {status === 'success' && <div className="p-4 bg-green-50 text-green-700 rounded-lg flex items-center gap-2 text-sm"><ShieldCheck className="h-5 w-5" /> Report generated & logged to Audit Vault.</div>}
+
+            <button type="submit" disabled={loading} className={`w-full py-4 rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-all ${loading ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-xl hover:scale-[1.02]'}`}>
+              {loading ? 'Crunching Numbers...' : <><Download className="h-5 w-5" /> Generate Compliance XML</>}
+            </button>
+
+            {status === 'success' && (
+              <div className="animate-in fade-in slide-in-from-top-2 p-4 bg-green-50 border border-green-200 text-green-800 rounded-lg flex items-center gap-3 text-sm shadow-sm">
+                <div className="bg-white p-1 rounded-full"><ShieldCheck className="h-5 w-5 text-green-600" /></div>
+                <div>
+                  <span className="font-bold block">Success!</span>
+                  <span className="text-green-700">Report generated & audit log secured.</span>
+                </div>
+              </div>
+            )}
           </form>
         </div>
       </div>
