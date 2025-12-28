@@ -196,6 +196,16 @@ class ContactDetailsType(BaseModel):
 
 class DeclarantAddressType(BaseModel):
     model_config = ConfigDict(defer_build=True)
+    country: str = field(
+        metadata={
+            "name": "Country",
+            "type": "Element",
+            "namespace": "http://xmlns.ec.eu/BusinessObjects/CBAM/Types/V1",
+            "required": True,
+            "min_length": 2,
+            "max_length": 2,
+        }
+    )
     sub_division: Optional[str] = field(
         default=None,
         metadata={
