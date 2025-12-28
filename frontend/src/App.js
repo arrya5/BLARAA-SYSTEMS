@@ -35,7 +35,7 @@ const Navbar = ({ onViewChange }) => (
             onClick={() => onViewChange('app')}
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition shadow-md hover:shadow-lg"
           >
-            Launch CBAM Pro
+            Launch CBAM
           </button>
         </div>
       </div>
@@ -165,7 +165,7 @@ const LandingPage = ({ onLaunch }) => (
         <div className="group relative bg-white border border-slate-200 rounded-2xl p-8 hover:shadow-2xl hover:border-blue-200 transition-all duration-300 cursor-pointer" onClick={onLaunch}>
           <div className="absolute top-6 right-6"><span className="bg-green-100 text-green-700 text-xs font-bold px-3 py-1 rounded-full">LIVE</span></div>
           <div className="bg-blue-100 h-14 w-14 rounded-xl flex items-center justify-center mb-6 text-blue-600"><FileCheck className="h-8 w-8" /></div>
-          <h3 className="text-2xl font-bold text-slate-900 mb-2 group-hover:text-blue-600 transition">CBAM Pro</h3>
+          <h3 className="text-2xl font-bold text-slate-900 mb-2 group-hover:text-blue-600 transition">CBAM</h3>
           <p className="text-slate-600 mb-6">Automated EU Carbon Border Adjustment Mechanism reporting. Includes XML generation and audit vault.</p>
           <span className="text-blue-600 font-bold flex items-center gap-2">Launch Application <ArrowRight className="h-4 w-4" /></span>
         </div>
@@ -192,7 +192,7 @@ const Dashboard = ({ formData, setFormData, loading, status, onSubmit, onChange 
         {/* Title Block */}
         <div>
            <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded uppercase tracking-wide">
-             CBAM Pro • v1.0
+             CBAM • v1.0
            </span>
            <h2 className="text-3xl font-extrabold text-slate-900 mt-4">
              EU Compliance Engine
