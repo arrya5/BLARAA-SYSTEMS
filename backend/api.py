@@ -4,6 +4,8 @@ from fastapi.responses import Response
 from pydantic import BaseModel
 from decimal import Decimal
 import sqlite3
+from fastapi import Header  # <--- Add this
+import os                   # <--- Add this
 
 # Import your engines
 from cbam_models import (
@@ -145,30 +147,33 @@ async def generate_cbam_report(data: FactoryInput):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-# --- ADMIN ROUTE TO VIEW VAULT ---
+# --- SECURE ADMIN ROUTE ---
 @app.get("/admin/view-vault")
-async def view_vault():
+async def view_vault(x_admin_key: str = Header(None)):
     """
-    ADMIN ONLY: Peeks inside the Glass Box to verify logs are being saved.
-    Returns the last 5 records.
+    ADMIN ONLY: Protected by Secret Key.
+    Requires Header: 'x-admin-key: YOUR_SECRET_PASSWORD'
     """
+    # 1. Get the secret from Environment Variables (or use default for localhost)
+    # We will set 'ADMIN_SECRET' in Render dashboard later.
+    valid_key = os.getenv("ADMIN_SECRET", "123456") 
+
+    # 2. Check the Key
+    if x_admin_key != valid_key:
+        raise HTTPException(status_code=401, detail="⛔ Unauthorized: Invalid Admin Key")
+
+    # 3. If Valid, Show the Data
     try:
         conn = sqlite3.connect("cbam_audit_trail.db")
         cursor = conn.cursor()
-        
-        # Get the last 5 entries
         cursor.execute("SELECT * FROM audit_log ORDER BY id DESC LIMIT 5")
         rows = cursor.fetchall()
-        
-        # Get column names so it looks like nice JSON
         column_names = [description[0] for description in cursor.description]
-        
         results = []
         for row in rows:
             results.append(dict(zip(column_names, row)))
-            
         conn.close()
         return {"status": "Active", "recent_logs": results}
-    
+
     except Exception as e:
         return {"status": "Error", "message": str(e)}
