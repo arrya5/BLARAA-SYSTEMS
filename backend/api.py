@@ -130,6 +130,22 @@ async def generate_cbam_report(data: FactoryInput):
         serializer = XmlSerializer(config=config)
         xml_string = serializer.render(report)
 
+        # Ensure Declarant ActorAddress includes Country (some bindings omit this field)
+        try:
+            import xml.etree.ElementTree as ET
+            ns = {'ns0': 'http://xmlns.ec.eu/BusinessObjects/CBAM/Types/V1'}
+            root = ET.fromstring(xml_string)
+            actor = root.find('.//ns0:Declarant/ns0:ActorAddress', ns)
+            if actor is not None and actor.find('ns0:Country', ns) is None:
+                country_elem = ET.Element('{http://xmlns.ec.eu/BusinessObjects/CBAM/Types/V1}Country')
+                country_elem.text = 'IN'
+                actor.append(country_elem)
+                # Re-serialize back to XML string
+                xml_string = ET.tostring(root, encoding='utf-8', method='xml').decode('utf-8')
+        except Exception:
+            # If XML post-processing fails, proceed with the original xml_string
+            pass
+
         # --- STEP D: LOG TO GLASS BOX (Audit Trail) ---
         try:
             log_report(data, spec_direct, spec_indirect)
