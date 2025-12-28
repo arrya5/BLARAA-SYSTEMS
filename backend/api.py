@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel
 from decimal import Decimal
+import sqlite3
 
 # Import your engines
 from cbam_models import (
@@ -143,3 +144,31 @@ async def generate_cbam_report(data: FactoryInput):
 
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+# --- ADMIN ROUTE TO VIEW VAULT ---
+@app.get("/admin/view-vault")
+async def view_vault():
+    """
+    ADMIN ONLY: Peeks inside the Glass Box to verify logs are being saved.
+    Returns the last 5 records.
+    """
+    try:
+        conn = sqlite3.connect("cbam_audit_trail.db")
+        cursor = conn.cursor()
+        
+        # Get the last 5 entries
+        cursor.execute("SELECT * FROM audit_log ORDER BY id DESC LIMIT 5")
+        rows = cursor.fetchall()
+        
+        # Get column names so it looks like nice JSON
+        column_names = [description[0] for description in cursor.description]
+        
+        results = []
+        for row in rows:
+            results.append(dict(zip(column_names, row)))
+            
+        conn.close()
+        return {"status": "Active", "recent_logs": results}
+    
+    except Exception as e:
+        return {"status": "Error", "message": str(e)}
