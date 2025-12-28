@@ -20,6 +20,7 @@ from calculator import CarbonCalculator, ElectricityCalculator
 from database import init_db, log_report  # Audit Trail Database
 
 app = FastAPI(title="CBAM Compliance API")
+# Trigger redeploy: touched by automation to pick up model changes
 
 # Initialize DB on startup
 @app.on_event("startup")
