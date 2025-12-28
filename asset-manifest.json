@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/BLARAA-SYSTEMS/static/css/main.7942d872.css",
+    "main.js": "/BLARAA-SYSTEMS/static/js/main.771e4c9b.js",
+    "static/js/453.625f5b7f.chunk.js": "/BLARAA-SYSTEMS/static/js/453.625f5b7f.chunk.js",
+    "index.html": "/BLARAA-SYSTEMS/index.html",
+    "main.7942d872.css.map": "/BLARAA-SYSTEMS/static/css/main.7942d872.css.map",
+    "main.771e4c9b.js.map": "/BLARAA-SYSTEMS/static/js/main.771e4c9b.js.map",
+    "453.625f5b7f.chunk.js.map": "/BLARAA-SYSTEMS/static/js/453.625f5b7f.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.7942d872.css",
+    "static/js/main.771e4c9b.js"
+  ]
+}
