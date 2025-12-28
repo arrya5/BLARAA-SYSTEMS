@@ -43,78 +43,61 @@ const Navbar = ({ onViewChange }) => (
   </nav>
 );
 
-// 2. The Admin Panel (NEW SECURE COMPONENT)
+// 2. The Admin Panel (STEALTH VERSION)
 const AdminPanel = () => {
   const [apiKey, setApiKey] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [logs, setLogs] = useState([]);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(false); // Simple boolean for red shake effect
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setError(false);
 
     try {
-      // ⚠️ Use your Render URL here
       const API_URL = 'https://cbam-full-app.onrender.com/admin/view-vault';
-      
       const response = await axios.get(API_URL, {
         headers: { 'x-admin-key': apiKey }
       });
-
       setLogs(response.data.recent_logs);
       setIsAuthenticated(true);
     } catch (err) {
-      setError('⛔ Access Denied: Invalid Admin Key');
+      setError(true); // Trigger error state
+      setApiKey('');  // Clear input on fail
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-20">
+    <div className="max-w-4xl mx-auto px-4 py-20 min-h-[60vh] flex flex-col justify-center">
       {!isAuthenticated ? (
-        // LOGIN SCREEN
-        <div className="max-w-md mx-auto bg-white p-8 rounded-2xl shadow-xl border border-slate-200 text-center">
-          <div className="bg-red-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Lock className="h-8 w-8 text-red-600" />
-          </div>
-          <h2 className="text-2xl font-bold text-slate-900 mb-2">Restricted Access</h2>
-          <p className="text-slate-500 mb-6">Enter your BLARAA Systems Security Key to view the audit vault.</p>
-          
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div className="relative">
-              <Key className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
-              <input 
-                type="password" 
-                placeholder="Enter Admin Key"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-red-500 outline-none"
-              />
-            </div>
-            {error && <p className="text-red-600 text-sm font-bold">{error}</p>}
-            <button 
-              type="submit" 
-              disabled={loading}
-              className="w-full bg-slate-900 text-white py-3 rounded-lg font-bold hover:bg-slate-800 transition"
-            >
-              {loading ? 'Verifying...' : 'Unlock Vault'}
-            </button>
+        // STEALTH LOGIN (Just a Box)
+        <div className="flex justify-center w-full">
+          <form onSubmit={handleLogin} className="w-full max-w-sm">
+            <input 
+              type="password" 
+              value={apiKey}
+              onChange={(e) => { setApiKey(e.target.value); setError(false); }}
+              placeholder="" 
+              autoFocus
+              className={`w-full bg-transparent border-b-2 text-center text-3xl font-mono tracking-widest py-4 focus:outline-none transition-colors
+                ${error 
+                  ? 'border-red-500 text-red-600 placeholder-red-300' 
+                  : 'border-slate-300 text-slate-800 focus:border-slate-900'
+                }`}
+            />
           </form>
         </div>
       ) : (
-        // LOGS TABLE SCREEN
+        // LOGS TABLE SCREEN (Remains the same)
         <div className="animate-in fade-in duration-500">
           <div className="flex justify-between items-center mb-8">
-            <div>
-              <h2 className="text-3xl font-bold text-slate-900">Audit Vault</h2>
-              <p className="text-slate-500">Real-time immutable logs from the "Glass Box".</p>
-            </div>
-            <button onClick={handleLogin} className="flex items-center gap-2 text-sm font-bold text-blue-600 hover:bg-blue-50 px-3 py-2 rounded-lg transition">
-              <RefreshCw className="h-4 w-4" /> Refresh Data
+            <h2 className="text-3xl font-bold text-slate-900">Audit Vault</h2>
+            <button onClick={() => window.location.reload()} className="text-sm font-bold text-blue-600 px-3 py-2 rounded-lg hover:bg-blue-50">
+              <RefreshCw className="h-4 w-4 inline mr-2" /> Refresh
             </button>
           </div>
 
@@ -132,12 +115,10 @@ const AdminPanel = () => {
                 </thead>
                 <tbody>
                   {logs.length === 0 ? (
-                    <tr>
-                      <td colSpan="5" className="px-6 py-8 text-center text-slate-400">The vault is empty.</td>
-                    </tr>
+                    <tr><td colSpan="5" className="px-6 py-8 text-center text-slate-400">Vault empty.</td></tr>
                   ) : (
                     logs.map((log, index) => (
-                      <tr key={index} className="border-b border-slate-100 hover:bg-slate-50 transition">
+                      <tr key={index} className="border-b border-slate-100 hover:bg-slate-50">
                         <td className="px-6 py-4 font-mono text-xs">{log.id}</td>
                         <td className="px-6 py-4">{log.timestamp}</td>
                         <td className="px-6 py-4 font-medium text-slate-900">{log.company_name}</td>
@@ -150,7 +131,6 @@ const AdminPanel = () => {
               </table>
             </div>
           </div>
-          <p className="text-center text-xs text-slate-400 mt-6">⚠️ CONFIDENTIAL: Authorized Personnel Only</p>
         </div>
       )}
     </div>
