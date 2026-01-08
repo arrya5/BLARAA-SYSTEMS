@@ -17,7 +17,7 @@ from cbam_models import (
 from xsdata_pydantic.bindings import XmlSerializer
 from xsdata.formats.dataclass.serializers.config import SerializerConfig
 from calculator import CarbonCalculator, ElectricityCalculator
-from database import init_db, log_report  # Audit Trail Database
+from database import init_db, log_report, save_feedback  # Audit Trail Database
 
 app = FastAPI(title="CBAM Compliance API")
 # Trigger redeploy: touched by automation to pick up model changes
@@ -44,6 +44,24 @@ class FactoryInput(BaseModel):
     coal_tonnes: float
     electricity_kwh: float
     city: str
+
+class FeedbackInput(BaseModel):
+    name: str
+    email: str
+    company: str = ""
+    message: str
+    rating: int = 5
+
+@app.post("/submit-feedback")
+async def submit_feedback(data: FeedbackInput):
+    """
+    Receives user feedback and stores it in the database.
+    """
+    try:
+        save_feedback(data.name, data.email, data.company, data.message, data.rating)
+        return {"status": "success", "message": "Thank you for your feedback!"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/generate-xml")
 async def generate_cbam_report(data: FactoryInput):

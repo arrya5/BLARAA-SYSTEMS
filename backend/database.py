@@ -32,6 +32,19 @@ def init_db():
             report_hash TEXT
         )
     ''')
+    
+    # Feedback table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS feedback (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp DATETIME,
+            name TEXT,
+            email TEXT,
+            company TEXT,
+            message TEXT,
+            rating INTEGER
+        )
+    ''')
     conn.commit()
     conn.close()
     print("✅ Audit Database Initialized.")
@@ -64,3 +77,27 @@ def log_report(data, spec_direct, spec_indirect):
     conn.commit()
     conn.close()
     print(f"🔒 [AUDIT LOG] Record saved for {data.company_name}")
+
+def save_feedback(name, email, company, message, rating):
+    """
+    Saves user feedback to database.
+    """
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        INSERT INTO feedback (
+            timestamp, name, email, company, message, rating
+        ) VALUES (?, ?, ?, ?, ?, ?)
+    ''', (
+        datetime.now(), 
+        name,
+        email,
+        company,
+        message,
+        rating
+    ))
+    
+    conn.commit()
+    conn.close()
+    print(f"📝 [FEEDBACK] Received from {name}")

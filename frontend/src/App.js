@@ -3,7 +3,7 @@ import axios from 'axios';
 import { 
   Factory, Zap, Flame, FileCheck, Download, 
   ShieldCheck, Info, ArrowRight, BarChart3, 
-  Globe, Lock, Key, RefreshCw 
+  Globe, Lock, Key, RefreshCw, MessageSquare, Star, Send 
 } from 'lucide-react';
 
 // --- COMPONENTS ---
@@ -31,6 +31,7 @@ const Navbar = ({ onViewChange }) => (
         </div>
         <div className="flex items-center gap-6 text-sm font-medium text-slate-600">
           <button onClick={() => onViewChange('landing')} className="hover:text-blue-600 transition">Products</button>
+          <button onClick={() => onViewChange('feedback')} className="hover:text-blue-600 transition">Feedback</button>
           <button 
             onClick={() => onViewChange('app')}
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition shadow-md hover:shadow-lg"
@@ -180,6 +181,163 @@ const LandingPage = ({ onLaunch }) => (
     </div>
   </div>
 );
+
+// 3b. Feedback Form Component
+const FeedbackForm = () => {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    company: '',
+    message: '',
+    rating: 5
+  });
+  const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleRating = (value) => {
+    setFormData({ ...formData, rating: value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      const API_URL = 'https://cbam-full-app.onrender.com/submit-feedback';
+      await axios.post(API_URL, formData);
+      setSubmitted(true);
+    } catch (err) {
+      setError('Failed to submit feedback. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (submitted) {
+    return (
+      <div className="animate-in fade-in duration-500 max-w-2xl mx-auto px-4 py-20 text-center">
+        <div className="bg-green-50 border border-green-200 rounded-2xl p-12">
+          <div className="bg-green-100 h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-6">
+            <ShieldCheck className="h-8 w-8 text-green-600" />
+          </div>
+          <h2 className="text-2xl font-bold text-green-800 mb-2">Thank You!</h2>
+          <p className="text-green-700">Your feedback has been received. We appreciate your input.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="animate-in fade-in duration-500 max-w-2xl mx-auto px-4 py-12">
+      <div className="text-center mb-10">
+        <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 px-4 py-2 rounded-full text-sm font-bold mb-4">
+          <MessageSquare className="h-4 w-4" /> We Value Your Feedback
+        </div>
+        <h2 className="text-3xl font-extrabold text-slate-900">Help Us Improve</h2>
+        <p className="text-slate-600 mt-2">Share your experience with BLARAA Systems</p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="bg-white border border-slate-200 rounded-2xl p-8 shadow-lg space-y-6">
+        {/* Rating */}
+        <div>
+          <label className="block text-sm font-bold text-slate-700 mb-3">How would you rate our service?</label>
+          <div className="flex gap-2">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <button
+                key={star}
+                type="button"
+                onClick={() => handleRating(star)}
+                className={`p-2 rounded-lg transition ${formData.rating >= star ? 'text-yellow-400' : 'text-slate-300'} hover:scale-110`}
+              >
+                <Star className="h-8 w-8" fill={formData.rating >= star ? 'currentColor' : 'none'} />
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Name & Email */}
+        <div className="grid md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-2">Name *</label>
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              placeholder="Your name"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-2">Email *</label>
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              placeholder="your@email.com"
+            />
+          </div>
+        </div>
+
+        {/* Company */}
+        <div>
+          <label className="block text-sm font-bold text-slate-700 mb-2">Company (Optional)</label>
+          <input
+            type="text"
+            name="company"
+            value={formData.company}
+            onChange={handleChange}
+            className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+            placeholder="Your company name"
+          />
+        </div>
+
+        {/* Message */}
+        <div>
+          <label className="block text-sm font-bold text-slate-700 mb-2">Your Feedback *</label>
+          <textarea
+            name="message"
+            value={formData.message}
+            onChange={handleChange}
+            required
+            rows={4}
+            className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition resize-none"
+            placeholder="Tell us about your experience..."
+          />
+        </div>
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+            {error}
+          </div>
+        )}
+
+        {/* Submit */}
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {loading ? (
+            <><RefreshCw className="h-5 w-5 animate-spin" /> Submitting...</>
+          ) : (
+            <><Send className="h-5 w-5" /> Submit Feedback</>
+          )}
+        </button>
+      </form>
+    </div>
+  );
+};
 
 // 4. The Dashboard (UPDATED WITH ABOUT SECTION)
 const Dashboard = ({ formData, setFormData, loading, status, onSubmit, onChange }) => (
@@ -338,7 +496,7 @@ const Dashboard = ({ formData, setFormData, loading, status, onSubmit, onChange 
 // --- MAIN APP LOGIC ---
 
 function App() {
-  const [view, setView] = useState('landing'); // 'landing' | 'app' | 'admin'
+  const [view, setView] = useState('landing'); // 'landing' | 'app' | 'admin' | 'feedback'
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState(null);
   const [formData, setFormData] = useState({
@@ -375,6 +533,7 @@ function App() {
   if (view === 'landing') CurrentComponent = <LandingPage onLaunch={() => setView('app')} />;
   else if (view === 'app') CurrentComponent = <Dashboard formData={formData} setFormData={setFormData} loading={loading} status={status} onSubmit={handleSubmit} onChange={handleChange} />;
   else if (view === 'admin') CurrentComponent = <AdminPanel />;
+  else if (view === 'feedback') CurrentComponent = <FeedbackForm />;
 
   return (
     <div className="min-h-screen bg-white font-sans text-slate-900 flex flex-col">
