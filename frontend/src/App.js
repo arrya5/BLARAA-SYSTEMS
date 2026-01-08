@@ -388,7 +388,8 @@ function App() {
              <Globe className="h-5 w-5 text-slate-400" />
              <span className="text-slate-500 font-bold tracking-widest text-xs uppercase">BLARAA SYSTEMS</span>
           </div>
-          <p className="text-slate-400 text-sm mb-6">&copy; 2025 BLARAA Systems Pvt Ltd • Bengaluru, India • Enterprise Grade Compliance</p>
+          <p className="text-slate-400 text-sm mb-4">&copy; 2025 BLARAA Systems Pvt Ltd • Bengaluru, India • Enterprise Grade Compliance</p>
+          <p className="text-slate-500 text-sm mb-6">For more details, call: <span className="font-semibold">9816979777</span></p>
           
           {/* THE SECRET DOOR */}
           <button 
