@@ -3,7 +3,7 @@ import axios from 'axios';
 import { 
   Factory, Zap, Flame, FileCheck, Download, 
   ShieldCheck, Info, ArrowRight, BarChart3, 
-  Globe, Lock, Key, RefreshCw, MessageSquare, Star, Send 
+  Globe, Lock, Key, RefreshCw, MessageSquare, Star, Send, FileText 
 } from 'lucide-react';
 
 // --- COMPONENTS ---
@@ -340,7 +340,7 @@ const FeedbackForm = () => {
 };
 
 // 4. The Dashboard (UPDATED WITH ABOUT SECTION)
-const Dashboard = ({ formData, setFormData, loading, status, onSubmit, onChange }) => (
+const Dashboard = ({ formData, setFormData, loading, loadingPdf, status, onSubmit, onSubmitPdf, onChange }) => (
   <div className="animate-in slide-in-from-bottom-4 duration-500 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
     <div className="lg:grid lg:grid-cols-12 lg:gap-16 items-start">
       
@@ -473,9 +473,14 @@ const Dashboard = ({ formData, setFormData, loading, status, onSubmit, onChange 
               </div>
             </div>
 
-            <button type="submit" disabled={loading} className={`w-full py-4 rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-all ${loading ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-xl hover:scale-[1.02]'}`}>
-              {loading ? 'Crunching Numbers...' : <><Download className="h-5 w-5" /> Generate Compliance XML</>}
-            </button>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <button type="submit" disabled={loading || loadingPdf} className={`py-4 rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-all ${loading ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-xl hover:scale-[1.02]'}`}>
+                {loading ? 'Generating...' : <><Download className="h-5 w-5" /> Download XML</>}
+              </button>
+              <button type="button" onClick={onSubmitPdf} disabled={loading || loadingPdf} className={`py-4 rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-all ${loadingPdf ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-green-600 text-white hover:bg-green-700 hover:shadow-xl hover:scale-[1.02]'}`}>
+                {loadingPdf ? 'Generating...' : <><FileText className="h-5 w-5" /> Download PDF</>}
+              </button>
+            </div>
 
             {status === 'success' && (
               <div className="animate-in fade-in slide-in-from-top-2 p-4 bg-green-50 border border-green-200 text-green-800 rounded-lg flex items-center gap-3 text-sm shadow-sm">
@@ -498,6 +503,7 @@ const Dashboard = ({ formData, setFormData, loading, status, onSubmit, onChange 
 function App() {
   const [view, setView] = useState('landing'); // 'landing' | 'app' | 'admin' | 'feedback'
   const [loading, setLoading] = useState(false);
+  const [loadingPdf, setLoadingPdf] = useState(false);
   const [status, setStatus] = useState(null);
   const [formData, setFormData] = useState({
     company_name: '', company_id: '', city: '',
@@ -510,7 +516,6 @@ function App() {
     e.preventDefault();
     setLoading(true); setStatus(null);
     try {
-      // ⚠️ UPDATE THIS URL
       const API_URL = 'https://cbam-full-app.onrender.com/generate-xml'; 
       const response = await axios.post(API_URL, formData, { responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -528,10 +533,35 @@ function App() {
     }
   };
 
+  const handleSubmitPdf = async () => {
+    if (!formData.company_name || !formData.company_id || !formData.city || 
+        !formData.production_tonnes || !formData.coal_tonnes || !formData.electricity_kwh) {
+      alert('Please fill all fields before generating PDF');
+      return;
+    }
+    setLoadingPdf(true); setStatus(null);
+    try {
+      const API_URL = 'https://cbam-full-app.onrender.com/generate-pdf'; 
+      const response = await axios.post(API_URL, formData, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${formData.company_name}_CBAM_Report.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setStatus('success');
+    } catch (error) {
+      console.error(error); setStatus('error');
+    } finally {
+      setLoadingPdf(false);
+    }
+  };
+
   // RENDER CONTROLLER
   let CurrentComponent;
   if (view === 'landing') CurrentComponent = <LandingPage onLaunch={() => setView('app')} />;
-  else if (view === 'app') CurrentComponent = <Dashboard formData={formData} setFormData={setFormData} loading={loading} status={status} onSubmit={handleSubmit} onChange={handleChange} />;
+  else if (view === 'app') CurrentComponent = <Dashboard formData={formData} setFormData={setFormData} loading={loading} loadingPdf={loadingPdf} status={status} onSubmit={handleSubmit} onSubmitPdf={handleSubmitPdf} onChange={handleChange} />;
   else if (view === 'admin') CurrentComponent = <AdminPanel />;
   else if (view === 'feedback') CurrentComponent = <FeedbackForm />;
 

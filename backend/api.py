@@ -18,6 +18,7 @@ from xsdata_pydantic.bindings import XmlSerializer
 from xsdata.formats.dataclass.serializers.config import SerializerConfig
 from calculator import CarbonCalculator, ElectricityCalculator
 from database import init_db, log_report, save_feedback  # Audit Trail Database
+from pdf_generator import generate_cbam_pdf  # PDF Report Generator
 
 app = FastAPI(title="CBAM Compliance API")
 # Trigger redeploy: touched by automation to pick up model changes
@@ -177,6 +178,35 @@ async def generate_cbam_report(data: FactoryInput):
             content=xml_string,
             media_type="application/xml",
             headers={"Content-Disposition": f"attachment; filename={data.company_name}_CBAM.xml"}
+        )
+
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/generate-pdf")
+async def generate_cbam_pdf_report(data: FactoryInput):
+    """
+    Takes raw factory data -> Returns Human-Readable PDF Report
+    """
+    try:
+        # --- STEP A: RUN THE CALCULATOR ---
+        fuel_engine = CarbonCalculator()
+        fuel_result = fuel_engine.calculate_direct_emissions("Lignite Coal", data.coal_tonnes)
+        spec_direct = fuel_engine.calculate_specific_emissions(
+            fuel_result["total_co2e"], data.production_tonnes
+        )
+
+        elec_engine = ElectricityCalculator()
+        elec_result = elec_engine.calculate_indirect("Grid", data.electricity_kwh)
+        spec_indirect = round(elec_result["total_indirect_co2e"] / data.production_tonnes, 6)
+
+        # --- STEP B: GENERATE PDF ---
+        pdf_buffer = generate_cbam_pdf(data, spec_direct, spec_indirect, elec_result)
+        
+        return Response(
+            content=pdf_buffer.getvalue(),
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"attachment; filename={data.company_name}_CBAM_Report.pdf"}
         )
 
     except Exception as e:
