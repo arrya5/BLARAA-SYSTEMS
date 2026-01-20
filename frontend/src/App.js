@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { 
   Factory, Zap, Flame, FileCheck, Download, 
-  ShieldCheck, Info, ArrowRight, BarChart3, 
-  Globe, Lock, Key, RefreshCw, MessageSquare, Star, Send, FileText 
+  ShieldCheck, ArrowRight, BarChart3, 
+  Globe, Lock, RefreshCw, MessageSquare, Star, Send, FileText 
 } from 'lucide-react';
 
 // --- COMPONENTS ---
@@ -50,11 +50,11 @@ const AdminPanel = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [logs, setLogs] = useState([]);
   const [error, setError] = useState(false); // Simple boolean for red shake effect
-  const [loading, setLoading] = useState(false);
+  const [adminLoading, setAdminLoading] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    setAdminLoading(true);
     setError(false);
 
     try {
@@ -68,7 +68,7 @@ const AdminPanel = () => {
       setError(true); // Trigger error state
       setApiKey('');  // Clear input on fail
     } finally {
-      setLoading(false);
+      setAdminLoading(false);
     }
   };
 
