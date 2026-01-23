@@ -247,10 +247,6 @@ def generate_cbam_pdf(data, spec_direct, spec_indirect, elec_result):
         footer_style
     ))
     elements.append(Paragraph(
-        "Disclaimer: Please verify calculations with official EU CBAM guidelines before submission.",
-        footer_style
-    ))
-    elements.append(Paragraph(
         f"BLARAA Systems • India • Professional Compliance Solutions",
         footer_style
     ))

@@ -835,8 +835,7 @@ function App() {
              <Leaf className="h-5 w-5 text-emerald-600" />
              <span className="text-emerald-700 font-bold tracking-widest text-xs uppercase">BLARAA SYSTEMS</span>
           </div>
-          <p className="text-emerald-600 text-sm mb-2">CarbonFile • Professional CBAM Compliance Solutions • India</p>
-          <p className="text-emerald-500 text-xs mb-4">This tool provides estimated calculations. Please verify with official EU CBAM guidelines before submission.</p>
+          <p className="text-emerald-600 text-sm mb-4">CarbonFile • Professional CBAM Compliance Solutions • India</p>
           <p className="text-emerald-700 text-sm mb-6">For inquiries: <span className="font-semibold">9816979777</span> | <span className="font-semibold">9805900001</span></p>
           
           {/* THE SECRET DOOR */}
