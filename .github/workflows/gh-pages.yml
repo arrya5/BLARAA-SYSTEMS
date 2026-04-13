@@ -26,6 +26,9 @@ jobs:
 
       - name: Build frontend
         working-directory: ./frontend
+        env:
+          PUBLIC_URL: /BLARAA-SYSTEMS
+          CI: false
         run: |
           npm run build
 
