@@ -12,7 +12,7 @@ Generate official XML + PDF reports in under 60 seconds. No spreadsheets. No gue
 
 ---
 
-### 🚀 [**OPEN THE LIVE APPLICATION →**](https://arrya5.github.io/BLARAA-SYSTEMS/)
+### 🚀 [**OPEN THE LIVE APPLICATION →**](https://blaraa-systems.vercel.app/)
 
 [![Pages](https://github.com/arrya5/BLARAA-SYSTEMS/actions/workflows/gh-pages.yml/badge.svg)](https://github.com/arrya5/BLARAA-SYSTEMS/actions/workflows/gh-pages.yml)
 [![Backend](https://img.shields.io/badge/Backend_API-Live_on_Render-46E3B7?logo=render)](https://cbam-full-app.onrender.com/docs)
@@ -51,7 +51,7 @@ Starting in 2026, any Indian company exporting **steel, cement, aluminum, fertil
 
 ## 🖥️ Screenshots & Live Demo
 
-> ### 👉 [**Try it now: arrya5.github.io/BLARAA-SYSTEMS**](https://arrya5.github.io/BLARAA-SYSTEMS/)
+> ### 👉 [**Try it now: blaraa-systems.vercel.app**](https://blaraa-systems.vercel.app/)
 
 The application has 4 screens:
 
@@ -83,7 +83,7 @@ The application has 4 screens:
 | **Tailwind CSS** | Styling |
 | **Axios** | HTTP client |
 | **Lucide React** | Icons |
-| **GitHub Pages** | Frontend hosting |
+| **Vercel / GH Pages** | Frontend hosting |
 | **GitHub Actions** | CI/CD pipeline |
 
 ---
@@ -209,7 +209,8 @@ reportlab
 
 | Service | What it hosts | Auto-deploy trigger |
 |---|---|---|
-| **GitHub Pages** | React frontend | Push to `main` → GitHub Actions builds and deploys to `gh-pages` branch |
+| **Vercel** | Production Frontend | Push to `main` → Vercel auto-deploys |
+| **GitHub Pages** | Backup Frontend | Push to `main` → GitHub Actions builds and deploys to `gh-pages` branch |
 | **Render.com** | FastAPI backend | Push to `main` → Render auto-deploys |
 
 ---
@@ -227,6 +228,6 @@ MIT — Free to use, modify, and distribute.
 
 📞 9816979777 | 9805900001
 
-**[🚀 Open Application](https://arrya5.github.io/BLARAA-SYSTEMS/) · [📖 API Docs](https://cbam-full-app.onrender.com/docs) · [🐙 GitHub](https://github.com/arrya5/BLARAA-SYSTEMS)**
+**[🚀 Open Application](https://blaraa-systems.vercel.app/) · [📖 API Docs](https://cbam-full-app.onrender.com/docs) · [🐙 GitHub](https://github.com/arrya5/BLARAA-SYSTEMS)**
 
 </div>
