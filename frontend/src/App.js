@@ -1,22 +1,437 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import './App.css';
-import { 
-  Factory, Zap, Flame, FileCheck, Download, 
-  ShieldCheck, ArrowRight, BarChart3, 
+import {
+  Factory, Zap, Flame, FileCheck, Download,
+  ShieldCheck, ArrowRight, BarChart3,
   Globe, Lock, RefreshCw, MessageSquare, Star, Send, FileText,
-  ChevronDown, Leaf, Building2, Calculator, HelpCircle, CheckCircle2
+  ChevronDown, Leaf, Building2, Calculator, HelpCircle, CheckCircle2,
+  ChevronRight, Clock, AlertTriangle, Mail, Users, Award, TrendingUp,
+  Menu, X, Truck
 } from 'lucide-react';
 
-// --- COMPONENTS ---
+// ─── PLATFORM DATA ────────────────────────────────────────────────
 
-// FAQ Accordion Component
+const PRODUCTS = {
+  cbam: {
+    id: 'cbam',
+    name: 'CarbonFile',
+    fullName: 'CarbonFile CBAM',
+    subtitle: 'EU Carbon Border Adjustment Mechanism',
+    status: 'live',
+    icon: FileCheck,
+    accentColor: '#16a34a',
+    bgColor: '#f0fdf4',
+    tagline: 'Generate EU-compliant CBAM reports in minutes',
+    description: 'Automated embedded emissions calculation and official EU XML schema generation for Indian exporters. Covers direct emissions (coal, gas) and indirect emissions (electricity) per tonne of production.',
+    regulation: 'EU CBAM Regulation (EU) 2023/956',
+    deadline: 'January 2026 — Full enforcement begins',
+    urgency: 'critical',
+    price: '₹1,999/report · ₹7,999/month · ₹59,999/year',
+    features: [
+      'Direct & indirect emissions calculation (EU methodology)',
+      'Official EU XML schema (XSD) — submission ready',
+      'PDF stakeholder report',
+      'Secure audit trail & vault',
+      'India grid electricity emission factors',
+    ],
+    sectors: ['Iron & Steel', 'Cement', 'Aluminium', 'Fertiliser', 'Hydrogen'],
+  },
+  ccts: {
+    id: 'ccts',
+    name: 'ComplianceCore',
+    fullName: 'ComplianceCore CCTS',
+    subtitle: 'Carbon Credit Trading Scheme MRV',
+    status: 'waitlist',
+    icon: BarChart3,
+    accentColor: '#2563eb',
+    bgColor: '#eff6ff',
+    tagline: 'Track GEI targets and manage Carbon Credit Certificates',
+    description: "India's mandatory carbon market compliance tool. Track your Greenhouse Gas Emission Intensity (GEI) vs BEE targets, generate MRV reports for indiancarbonmarket.gov.in, and calculate your CCC surplus or deficit.",
+    regulation: 'Energy Conservation Amendment Act 2022 + GHG Emission Intensity Target Rules 2025',
+    deadline: 'FY 2026 — First CCTS compliance year',
+    urgency: 'critical',
+    price: '₹50,000–₹5,00,000/year',
+    features: [
+      'GEI target vs actual performance tracking',
+      'Carbon Credit Certificate surplus/deficit calculator',
+      'BEE MRV format report generation',
+      'Monthly performance dashboard',
+      'indiancarbonmarket.gov.in integration',
+    ],
+    sectors: ['Aluminium', 'Cement', 'Iron & Steel', 'Fertiliser', 'Petroleum Refinery', 'Petrochemicals', 'Chlor Alkali', 'Pulp & Paper', 'Textile'],
+  },
+  rco: {
+    id: 'rco',
+    name: 'RenewTrack',
+    fullName: 'RenewTrack RCO',
+    subtitle: 'Renewable Consumption Obligation',
+    status: 'live',
+    icon: Zap,
+    accentColor: '#d97706',
+    bgColor: '#fffbeb',
+    tagline: 'Stay RCO compliant — deadline extended 4 times already',
+    description: 'Calculate your mandatory renewable energy %, identify REC shortfall, and generate BEE-format compliance submissions. Covers DISCOMs, open access consumers, and captive power plants.',
+    regulation: 'Energy Conservation Act 2001 + RCO Amendment Sep 2025',
+    deadline: 'May 31, 2026 — 4th and final extension',
+    urgency: 'high',
+    price: '₹15,000–₹80,000/year',
+    features: [
+      'Renewable % vs mandatory sector target',
+      'REC units shortfall calculator',
+      'DISCOM + Open Access + CPP support',
+      'BEE submission format reports',
+      'Buyout price comparison tool',
+    ],
+    sectors: ['DISCOMs', 'Steel', 'Cement', 'Aluminium', 'Railways', 'Automotive', 'Glass', 'Ceramics'],
+  },
+  brokerage: {
+    id: 'brokerage',
+    name: 'CarbonXchange',
+    fullName: 'CarbonXchange',
+    subtitle: 'Carbon Credit Certificate Trading',
+    status: 'soon',
+    icon: TrendingUp,
+    accentColor: '#059669',
+    bgColor: '#ecfdf5',
+    tagline: 'Buy and sell Carbon Credit Certificates on India\'s live market',
+    description: 'Marketplace connecting CCTS entities with surplus CCCs to those facing deficits. Verified credits, transparent pricing, BEE-compliant transfer documentation.',
+    regulation: 'CCTS Compliance Mechanism · Indian Carbon Market',
+    deadline: 'Market is LIVE — indiancarbonmarket.gov.in',
+    urgency: 'medium',
+    price: '1–2% commission per trade',
+    features: [
+      'Verified Carbon Credit Certificate listings',
+      'Real-time market price discovery',
+      'BEE-compliant transfer documentation',
+      'Portfolio tracking dashboard',
+      'All 9 CCTS sectors supported',
+    ],
+    sectors: ['All 9 CCTS obligated sectors', 'Carbon market participants'],
+  },
+  adeetie: {
+    id: 'adeetie',
+    name: 'ConnectBEE',
+    fullName: 'ConnectBEE',
+    subtitle: 'ADEETIE & SAATHEE Portal Integration',
+    status: 'soon',
+    icon: Globe,
+    accentColor: '#7c3aed',
+    bgColor: '#f5f3ff',
+    tagline: 'Auto-submit compliance data to BEE government portals',
+    description: "API connector that takes your operational data and auto-submits to BEE's ADEETIE and SAATHEE platforms — eliminating manual data entry and submission errors.",
+    regulation: 'BEE Annual Data Reporting Requirements',
+    deadline: 'Annual reporting cycle',
+    urgency: 'medium',
+    price: '₹30,000 one-time + ₹5,000/year',
+    features: [
+      'ADEETIE auto-submission',
+      'SAATHEE integration',
+      'Pre-submission data validation',
+      'Submission receipts & audit trail',
+      'ERP system connectors',
+    ],
+    sectors: ['All BEE Designated Consumers', 'DISCOMs', 'PAT entities'],
+  },
+  voluntary: {
+    id: 'voluntary',
+    name: 'GreenCredit',
+    fullName: 'GreenCredit',
+    subtitle: 'Voluntary Carbon Offset Registry',
+    status: 'soon',
+    icon: Leaf,
+    accentColor: '#16a34a',
+    bgColor: '#f0fdf4',
+    tagline: 'Register projects and earn Carbon Credit Certificates',
+    description: "Help farmers, NGOs, and SMEs register offset projects under BEE's 8 approved methodologies (March 2025) and earn CCCs for sale on the Indian Carbon Market.",
+    regulation: 'CCTS Offset Mechanism + 8 Approved Methodologies (March 28, 2025)',
+    deadline: '2026 — Offset market launch',
+    urgency: 'medium',
+    price: '5% of credits sold',
+    features: [
+      'Project registration for all 8 methodologies',
+      'Verification workflow with accredited agencies',
+      'CCC issuance tracking',
+      'Credit listing on indiancarbonmarket.gov.in',
+      'Simple farmer/NGO onboarding',
+    ],
+    sectors: ['Agriculture', 'Afforestation', 'Clean Cooking', 'Waste Management', 'SMEs', 'NGOs'],
+  },
+  cafe: {
+    id: 'cafe',
+    name: 'FuelCompute',
+    fullName: 'FuelCompute CAFE',
+    subtitle: 'Corporate Average Fuel Economy Compliance',
+    status: 'soon',
+    icon: Truck,
+    accentColor: '#dc2626',
+    bgColor: '#fef2f2',
+    tagline: 'Track fleet fuel efficiency against CAFE 3 norms',
+    description: 'Calculate corporate average fuel economy across your vehicle portfolio, model performance gaps against CAFE 3 targets (2027–32 cycle), and generate BEE compliance reports.',
+    regulation: 'CAFE 3 Norms 2027–2032 (BEE Draft Notification)',
+    deadline: '2027 — CAFE 3 cycle begins',
+    urgency: 'medium',
+    price: '₹5,00,000–₹20,00,000/year',
+    features: [
+      'Fleet-wide CAFE calculation',
+      'Model-by-model breakdown',
+      'Gap analysis vs CAFE 3 targets',
+      'HDV, MDV, LDV and passenger car support',
+      'BEE compliance report generation',
+    ],
+    sectors: ['Passenger Car OEMs', 'Commercial Vehicle Manufacturers', 'Two-Wheeler OEMs'],
+  },
+  ecsbc: {
+    id: 'ecsbc',
+    name: 'BuildCode',
+    fullName: 'BuildCode ECSBC',
+    subtitle: 'Energy Conservation Building Code Compliance',
+    status: 'soon',
+    icon: Building2,
+    accentColor: '#ea580c',
+    bgColor: '#fff7ed',
+    tagline: 'ECSBC 2024 and Eco-Niwas Samhita compliance made simple',
+    description: 'Assess buildings against ECSBC 2024 and Eco-Niwas Samhita 2024 standards. Generate compliance certificates across all 4 climate zones for residential and commercial projects.',
+    regulation: 'ECSBC 2024 + Eco-Niwas Samhita 2024 (BEE)',
+    deadline: 'Mandatory for all new buildings',
+    urgency: 'medium',
+    price: '₹10,000–₹50,000/project',
+    features: [
+      'Residential + commercial coverage',
+      'All 4 Indian climate zones',
+      'Building envelope compliance check',
+      'HVAC, lighting and appliance assessment',
+      'BEE Building Star Label application ready',
+    ],
+    sectors: ['Builders & Developers', 'Architects', 'Government Buildings', 'Commercial Real Estate'],
+  },
+  certification: {
+    id: 'certification',
+    name: 'AuditPrep',
+    fullName: 'AuditPrep',
+    subtitle: 'BEE Energy Auditor Certification Prep',
+    status: 'soon',
+    icon: Award,
+    accentColor: '#0891b2',
+    bgColor: '#ecfeff',
+    tagline: 'Pass the BEE National Certification Examination',
+    description: "Comprehensive prep platform for BEE's National Certification Examination for Energy Managers and Auditors — updated for 2025 certification regulations.",
+    regulation: 'BEE Certification of Energy Auditors Regulations 2025',
+    deadline: 'Annual exam cycle',
+    urgency: 'medium',
+    price: '₹3,000–₹8,000/course',
+    features: [
+      'Full syllabus for EA and EM examinations',
+      'Past paper practice tests',
+      'Sector-specific modules',
+      'Live doubt-clearing sessions',
+      '25th National Exam results tracker',
+    ],
+    sectors: ['Engineering Graduates', 'Factory Compliance Teams', 'Consulting Firms'],
+  },
+  coldchain: {
+    id: 'coldchain',
+    name: 'ColdTrack',
+    fullName: 'ColdTrack',
+    subtitle: 'Cold Chain Energy Efficiency SaaS',
+    status: 'soon',
+    icon: Zap,
+    accentColor: '#0284c7',
+    bgColor: '#f0f9ff',
+    tagline: 'Optimize refrigeration energy and meet BEE standards',
+    description: 'Monitor and report energy consumption across cold storage facilities. Generate BEE energy audit reports and identify savings opportunities across your cold chain network.',
+    regulation: 'BEE Cold Chain Energy Efficiency Guidelines',
+    deadline: '2026–27',
+    urgency: 'low',
+    price: '₹20,000–₹80,000/year',
+    features: [
+      'Temperature + energy monitoring dashboard',
+      'BEE audit report generation',
+      'Energy savings identification & ROI',
+      'Multi-facility management',
+      'Refrigerant type tracking',
+    ],
+    sectors: ['Cold Storage Operators', 'Food Processing', 'Pharma Warehouses', 'Logistics'],
+  },
+  seei: {
+    id: 'seei',
+    name: 'StateSync',
+    fullName: 'StateSync SEEI',
+    subtitle: 'State Energy Efficiency Index Dashboard',
+    status: 'soon',
+    icon: BarChart3,
+    accentColor: '#4f46e5',
+    bgColor: '#eef2ff',
+    tagline: "Track and improve your state's BEE SEEI ranking",
+    description: "Dashboard for state energy departments to monitor all SEEI 2024–25 indicators, identify gaps vs top-ranked states, and generate progress reports for BEE.",
+    regulation: 'State Energy Efficiency Index (BEE Annual Publication)',
+    deadline: 'Annual SEEI reporting',
+    urgency: 'medium',
+    price: '₹20,00,000–₹50,00,000/state/year',
+    features: [
+      'SEEI 2024 & 2025 baseline tracking',
+      'Indicator-wise gap vs top states',
+      'District-level drill-down',
+      'Annual BEE progress reports',
+      'Policy recommendation engine',
+    ],
+    sectors: ['State Energy Departments', 'State Designated Agencies (SDAs)'],
+  },
+};
+
+const ALL_PRODUCTS = Object.values(PRODUCTS);
+
+// ─── RCO GOVERNMENT DATA (MoP notification 27 Sep 2025) ──────────────
+const HILLY_NE_STATES = ['Arunachal Pradesh','Assam','Manipur','Meghalaya','Mizoram','Nagaland','Sikkim','Tripura','Jammu & Kashmir','Ladakh','Himachal Pradesh','Uttarakhand'];
+
+const RCO_TARGETS = {
+  '2024-25': { overall: 29.91, wind: 0.67, hydro: 0.38, dre: 1.50, other: 27.36 },
+  '2025-26': { overall: 33.01, wind: 1.45, hydro: 1.22, dre: 2.10, other: 28.24 },
+  '2026-27': { overall: 35.95, wind: 1.97, hydro: 1.34, dre: 2.70, other: 29.94 },
+  '2027-28': { overall: 38.81, wind: 3.20, hydro: 2.00, dre: 3.00, other: 30.61 },
+  '2028-29': { overall: 41.36, wind: 4.00, hydro: 2.50, dre: 4.00, other: 30.86 },
+  '2029-30': { overall: 43.33, wind: 4.80, hydro: 3.00, dre: 4.50, other: 31.03 },
+};
+
+// CERC Order — FY 2024-25 & 2025-26: ₹347/MWh; 5% annual escalation from FY 2026-27
+const RCO_BUYOUT = {
+  '2024-25': 347, '2025-26': 347, '2026-27': 364,
+  '2027-28': 382, '2028-29': 401, '2029-30': 421,
+};
+
+const INDIAN_STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal','Jammu & Kashmir','Ladakh','Delhi','Chandigarh','Puducherry','Other UTs'];
+
+const RCO_SECTORS = ['Iron & Steel','Cement','Aluminium','Fertiliser','Petroleum Refinery','Petrochemicals','Textile','Chlor Alkali','Pulp & Paper','Railways','Automotive','Power Distribution (DISCOM)','Other'];
+
+const fmtMWh = (n) => {
+  if (n >= 1000000) return `${(n / 1000000).toFixed(2)} TWh`;
+  if (n >= 1000) return `${(n / 1000).toFixed(2)} GWh`;
+  return `${n.toFixed(0)} MWh`;
+};
+
+const fmtINR = (n) => {
+  if (n >= 1e7) return `₹${(n / 1e7).toFixed(2)} Cr`;
+  if (n >= 1e5) return `₹${(n / 1e5).toFixed(2)} L`;
+  return `₹${Math.round(n).toLocaleString('en-IN')}`;
+};
+// ─────────────────────────────────────────────────────────────────────
+
+const SECTORS = [
+  {
+    id: 'industry',
+    label: 'Heavy Industry',
+    subtitle: 'Steel · Cement · Aluminium · Fertiliser · Petrochemical',
+    icon: Factory,
+    accentColor: '#1e40af',
+    bgColor: '#dbeafe',
+    description: 'You face the highest compliance burden in India — CBAM for EU exports, CCTS for domestic carbon targets, and RCO for renewable mandates. All active simultaneously.',
+    products: ['cbam', 'ccts', 'rco', 'brokerage', 'adeetie'],
+    urgency: 'CRITICAL — 3 regulations active now',
+    urgencyColor: '#dc2626',
+  },
+  {
+    id: 'exporters',
+    label: 'EU Exporters',
+    subtitle: 'Exporting covered goods to Europe',
+    icon: Globe,
+    accentColor: '#16a34a',
+    bgColor: '#dcfce7',
+    description: 'EU CBAM full enforcement starts January 2026. Every shipment of steel, cement, aluminium, or fertiliser to the EU requires an embedded emissions report.',
+    products: ['cbam'],
+    urgency: 'January 2026 — Enforcement begins',
+    urgencyColor: '#dc2626',
+  },
+  {
+    id: 'utilities',
+    label: 'Power Utilities',
+    subtitle: 'DISCOMs & Electricity Distributors',
+    icon: Zap,
+    accentColor: '#d97706',
+    bgColor: '#fef3c7',
+    description: "RCO mandates a minimum % of renewable energy in your distribution mix. Deadline extended 4 times — regulators are out of patience.",
+    products: ['rco', 'adeetie'],
+    urgency: 'May 31, 2026 — Final RCO deadline',
+    urgencyColor: '#ea580c',
+  },
+  {
+    id: 'buildings',
+    label: 'Buildings & Construction',
+    subtitle: 'Builders · Architects · Developers',
+    icon: Building2,
+    accentColor: '#ea580c',
+    bgColor: '#ffedd5',
+    description: 'ECSBC 2024 and Eco-Niwas Samhita 2024 are mandatory for all new buildings. BEE Building Star Label certification is now linked to project approvals.',
+    products: ['ecsbc'],
+    urgency: 'Mandatory for all new buildings',
+    urgencyColor: '#ea580c',
+  },
+  {
+    id: 'automotive',
+    label: 'Automotive',
+    subtitle: 'Vehicle Manufacturers & OEMs',
+    icon: Truck,
+    accentColor: '#dc2626',
+    bgColor: '#fee2e2',
+    description: 'CAFE 3 norms (2027–32) are in draft. Every OEM needs to model fleet performance against new fuel efficiency targets now — before they are finalized.',
+    products: ['cafe'],
+    urgency: '2027 — CAFE 3 compliance cycle',
+    urgencyColor: '#d97706',
+  },
+  {
+    id: 'professionals',
+    label: 'Energy Professionals',
+    subtitle: 'Energy Auditors · Managers · Consultants',
+    icon: Award,
+    accentColor: '#0891b2',
+    bgColor: '#cffafe',
+    description: 'All designated consumers must employ certified BEE Energy Managers. New certification regulations 2025 change exam requirements. 50,000+ aspiring auditors need prep.',
+    products: ['certification', 'adeetie'],
+    urgency: 'New 2025 certification regulations',
+    urgencyColor: '#0891b2',
+  },
+  {
+    id: 'carbon-market',
+    label: 'Carbon Market',
+    subtitle: 'Credit buyers · Sellers · Project developers',
+    icon: TrendingUp,
+    accentColor: '#059669',
+    bgColor: '#d1fae5',
+    description: 'The Indian Carbon Market is live. CCTS entities buy/sell CCCs. Non-obligated entities — farmers, NGOs, SMEs — can register offset projects under 8 approved methodologies.',
+    products: ['brokerage', 'voluntary'],
+    urgency: 'Market is LIVE — indiancarbonmarket.gov.in',
+    urgencyColor: '#16a34a',
+  },
+  {
+    id: 'coldchain',
+    label: 'Cold Chain & Food',
+    subtitle: 'Cold Storage · Food Processing · Logistics',
+    icon: Factory,
+    accentColor: '#0284c7',
+    bgColor: '#e0f2fe',
+    description: "BEE cold chain energy efficiency guidelines are being enforced. Mandatory energy audits are coming for large cold storage operators from 2026–27.",
+    products: ['coldchain'],
+    urgency: '2026–27 — BEE enforcement',
+    urgencyColor: '#0284c7',
+  },
+  {
+    id: 'government',
+    label: 'State Government',
+    subtitle: 'State Energy Depts · SDAs',
+    icon: ShieldCheck,
+    accentColor: '#4f46e5',
+    bgColor: '#e0e7ff',
+    description: "BEE publishes the State Energy Efficiency Index annually. States ranked poorly face political pressure and risk losing central energy funds.",
+    products: ['seei'],
+    urgency: 'Annual SEEI ranking by BEE',
+    urgencyColor: '#4f46e5',
+  },
+];
+
+// ─── EXISTING COMPONENTS (unchanged) ──────────────────────────────
+
 const FAQItem = ({ question, answer, isOpen, onClick }) => (
   <div className="border border-emerald-100 rounded-xl overflow-hidden bg-white/50 backdrop-blur-sm">
-    <button 
-      onClick={onClick}
-      className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-emerald-50/50 transition"
-    >
+    <button onClick={onClick} className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-emerald-50/50 transition">
       <span className="font-semibold text-slate-800">{question}</span>
       <ChevronDown className={`h-5 w-5 text-emerald-600 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
     </button>
@@ -28,34 +443,14 @@ const FAQItem = ({ question, answer, isOpen, onClick }) => (
 
 const FAQSection = () => {
   const [openIndex, setOpenIndex] = useState(0);
-  
   const faqs = [
-    {
-      question: "What is CBAM (Carbon Border Adjustment Mechanism)?",
-      answer: "CBAM is the EU's landmark policy to put a carbon price on imports. Starting 2026, Indian exporters of steel, cement, aluminum, fertilizers, and electricity must report their embedded carbon emissions. This ensures EU importers pay the same carbon costs as EU producers, preventing 'carbon leakage' where production moves to countries with weaker climate policies."
-    },
-    {
-      question: "Who needs to comply with CBAM?",
-      answer: "Any company exporting CBAM-covered goods (iron, steel, cement, aluminum, fertilizers, electricity, hydrogen) to the EU needs to comply. During the transition phase (2023-2025), only reporting is required. From 2026, EU importers must purchase CBAM certificates corresponding to the carbon price."
-    },
-    {
-      question: "How does this tool calculate emissions?",
-      answer: "We use the official EU methodology for calculating embedded emissions. Direct emissions are calculated from fuel consumption (coal, gas, etc.) using standard emission factors. Indirect emissions come from electricity usage multiplied by grid emission factors. The specific embedded emissions are then calculated per tonne of production."
-    },
-    {
-      question: "Is the generated XML file EU-compliant?",
-      answer: "Yes! Our XML output follows the official EU CBAM schema (XSD). It includes all required fields: declarant information, commodity codes (HS/CN), production data, direct and indirect emissions, and calculation methodology. The file is ready for upload to the EU Transitional Registry."
-    },
-    {
-      question: "What data do I need to generate a report?",
-      answer: "You'll need: 1) Company details (name, ID, location), 2) Production quantity in tonnes, 3) Fuel consumption (coal/gas in tonnes), 4) Electricity consumption in kWh. We handle all the complex calculations automatically."
-    },
-    {
-      question: "How much does this service cost?",
-      answer: "We're currently in early access mode. Contact us directly to discuss pricing that works for your business size and reporting frequency. We offer flexible plans for SMEs and large enterprises."
-    }
+    { question: 'What is CBAM (Carbon Border Adjustment Mechanism)?', answer: "CBAM is the EU's landmark policy to put a carbon price on imports. Starting 2026, Indian exporters of steel, cement, aluminum, fertilizers, and electricity must report their embedded carbon emissions. This ensures EU importers pay the same carbon costs as EU producers, preventing 'carbon leakage' where production moves to countries with weaker climate policies." },
+    { question: 'What is India\'s Carbon Credit Trading Scheme (CCTS)?', answer: 'CCTS is India\'s mandatory domestic carbon market under the Energy Conservation Amendment Act 2022. Around 740 energy-intensive factories across 9 sectors get legally binding Greenhouse Gas Emission Intensity targets. Factories that beat targets earn Carbon Credit Certificates they can sell. Factories that miss targets must buy CCCs or pay penalties. First compliance year is FY2026.' },
+    { question: 'What is the Renewable Consumption Obligation (RCO)?', answer: 'RCO mandates that designated consumers (large factories, DISCOMs, railways) consume a minimum percentage of their electricity from non-fossil/renewable sources. The deadline has been extended four times — the final deadline is May 31, 2026. Non-compliance will result in penalties under the new Compliance Enforcement Rules 2025.' },
+    { question: 'How does CarbonFile calculate CBAM emissions?', answer: "We use the official EU methodology. Direct emissions are calculated from fuel consumption (coal, gas) using standard emission factors. Indirect emissions come from electricity usage multiplied by India's grid emission factor. Specific embedded emissions are calculated per tonne of production. The XML output follows the official EU CBAM schema." },
+    { question: 'Which companies need to comply with CCTS?', answer: 'Around 740 large factories across 9 sectors: Aluminium, Cement, Iron & Steel, Fertiliser, Petroleum Refinery, Petrochemicals, Chlor Alkali, Pulp & Paper, and Textile. These are the same sectors covered by BEE\'s PAT scheme, which is now transitioning to CCTS. GHG Emission Intensity Target Rules 2025 set the baselines.' },
+    { question: 'How much does the platform cost?', answer: 'CarbonFile CBAM (live) starts at ₹1,999/report or ₹7,999/month. CCTS and RCO modules are in early access — join the waitlist for priority pricing. Enterprise and multi-product bundles available for factories facing multiple compliance requirements. Contact us for a custom quote.' },
   ];
-
   return (
     <div className="py-20 bg-gradient-to-b from-white to-emerald-50/30">
       <div className="max-w-4xl mx-auto px-4">
@@ -64,17 +459,11 @@ const FAQSection = () => {
             <HelpCircle className="h-4 w-4" /> Frequently Asked Questions
           </span>
           <h2 className="text-3xl font-extrabold text-slate-900">Everything you need to know</h2>
-          <p className="text-slate-600 mt-2">Get answers about CBAM compliance and our platform</p>
+          <p className="text-slate-600 mt-2">About CBAM, CCTS, RCO and our compliance platform</p>
         </div>
         <div className="space-y-3">
           {faqs.map((faq, index) => (
-            <FAQItem 
-              key={index}
-              question={faq.question}
-              answer={faq.answer}
-              isOpen={openIndex === index}
-              onClick={() => setOpenIndex(openIndex === index ? -1 : index)}
-            />
+            <FAQItem key={index} question={faq.question} answer={faq.answer} isOpen={openIndex === index} onClick={() => setOpenIndex(openIndex === index ? -1 : index)} />
           ))}
         </div>
       </div>
@@ -82,39 +471,26 @@ const FAQSection = () => {
   );
 };
 
-// Progress Steps Component
 const ProgressSteps = ({ currentStep }) => {
   const steps = [
     { num: 1, label: 'Company Info', icon: Building2 },
     { num: 2, label: 'Production Data', icon: Factory },
-    { num: 3, label: 'Generate Report', icon: FileCheck }
+    { num: 3, label: 'Generate Report', icon: FileCheck },
   ];
-
   return (
     <div className="flex items-center justify-center gap-2 mb-8">
       {steps.map((step, index) => {
         const Icon = step.icon;
         const isActive = currentStep >= step.num;
         const isComplete = currentStep > step.num;
-        
         return (
           <React.Fragment key={step.num}>
-            <div className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${
-              isActive 
-                ? 'bg-emerald-100 text-emerald-700' 
-                : 'bg-slate-100 text-slate-400'
-            }`}>
-              {isComplete ? (
-                <CheckCircle2 className="h-4 w-4" />
-              ) : (
-                <Icon className="h-4 w-4" />
-              )}
+            <div className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-400'}`}>
+              {isComplete ? <CheckCircle2 className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
               <span className="text-sm font-semibold hidden sm:inline">{step.label}</span>
               <span className="text-sm font-semibold sm:hidden">{step.num}</span>
             </div>
-            {index < steps.length - 1 && (
-              <div className={`w-8 h-0.5 ${isActive ? 'bg-emerald-300' : 'bg-slate-200'}`} />
-            )}
+            {index < steps.length - 1 && <div className={`w-8 h-0.5 ${isActive ? 'bg-emerald-300' : 'bg-slate-200'}`} />}
           </React.Fragment>
         );
       })}
@@ -122,35 +498,21 @@ const ProgressSteps = ({ currentStep }) => {
   );
 };
 
-// Live Calculation Preview
 const LivePreview = ({ formData }) => {
   const [preview, setPreview] = useState({ direct: 0, indirect: 0, total: 0 });
-  
   useEffect(() => {
     const production = parseFloat(formData.production_tonnes) || 0;
     const coal = parseFloat(formData.coal_tonnes) || 0;
     const electricity = parseFloat(formData.electricity_kwh) || 0;
-    
     if (production > 0) {
-      // Simplified calculation preview (actual uses backend)
-      const coalFactor = 2.42; // tCO2 per tonne coal (approximate)
-      const elecFactor = 0.82 / 1000; // tCO2 per kWh (India grid)
-      
-      const directEmissions = (coal * coalFactor) / production;
-      const indirectEmissions = (electricity * elecFactor) / production;
-      
-      setPreview({
-        direct: directEmissions.toFixed(4),
-        indirect: indirectEmissions.toFixed(6),
-        total: (directEmissions + indirectEmissions).toFixed(4)
-      });
+      const directEmissions = (coal * 2.42) / production;
+      const indirectEmissions = (electricity * 0.82) / 1000 / production;
+      setPreview({ direct: directEmissions.toFixed(4), indirect: indirectEmissions.toFixed(6), total: (directEmissions + indirectEmissions).toFixed(4) });
     } else {
       setPreview({ direct: 0, indirect: 0, total: 0 });
     }
   }, [formData]);
-
   const hasData = parseFloat(formData.production_tonnes) > 0;
-
   return (
     <div className={`bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl p-4 transition-all ${hasData ? 'opacity-100' : 'opacity-50'}`}>
       <div className="flex items-center gap-2 mb-3">
@@ -158,146 +520,15 @@ const LivePreview = ({ formData }) => {
         <span className="text-sm font-bold text-emerald-800">Live Estimate (tCO2/tonne)</span>
       </div>
       <div className="grid grid-cols-3 gap-3 text-center">
-        <div className="bg-white/60 rounded-lg p-2">
-          <p className="text-xs text-slate-500">Direct</p>
-          <p className="font-mono font-bold text-emerald-700">{preview.direct}</p>
-        </div>
-        <div className="bg-white/60 rounded-lg p-2">
-          <p className="text-xs text-slate-500">Indirect</p>
-          <p className="font-mono font-bold text-emerald-700">{preview.indirect}</p>
-        </div>
-        <div className="bg-white/60 rounded-lg p-2 border-2 border-emerald-300">
-          <p className="text-xs text-slate-500">Total</p>
-          <p className="font-mono font-bold text-emerald-800">{preview.total}</p>
-        </div>
+        <div className="bg-white/60 rounded-lg p-2"><p className="text-xs text-slate-500">Direct</p><p className="font-mono font-bold text-emerald-700">{preview.direct}</p></div>
+        <div className="bg-white/60 rounded-lg p-2"><p className="text-xs text-slate-500">Indirect</p><p className="font-mono font-bold text-emerald-700">{preview.indirect}</p></div>
+        <div className="bg-white/60 rounded-lg p-2 border-2 border-emerald-300"><p className="text-xs text-slate-500">Total</p><p className="font-mono font-bold text-emerald-800">{preview.total}</p></div>
       </div>
       <p className="text-xs text-emerald-600 mt-2 text-center italic">*Estimates only. Final values calculated by backend.</p>
     </div>
   );
 };
 
-// 1. The Navbar — scroll-aware, transparent over hero, frosted when scrolled
-const Navbar = ({ onViewChange, scrolled }) => (
-  <nav className={`navbar ${scrolled ? 'solid' : 'transparent'}`}>
-    <div className="max-w-7xl mx-auto px-6 sm:px-8 flex justify-between items-center">
-      <button onClick={() => onViewChange('landing')} className="flex items-center gap-3" style={{background:'none',border:'none',cursor:'pointer',padding:0}}>
-        <div style={{background:'linear-gradient(135deg,#092f6f,#1db5f2)',padding:'8px',borderRadius:'10px',display:'flex'}}>
-          <Leaf style={{width:20,height:20,color:'#fff'}} />
-        </div>
-        <div style={{display:'flex',flexDirection:'column',alignItems:'flex-start'}}>
-          <span style={{fontSize:'9px',fontWeight:800,letterSpacing:'0.18em',textTransform:'uppercase',color: scrolled ? '#1db5f2' : 'rgba(255,255,255,0.8)',lineHeight:1,fontFamily:'var(--font-body)'}}>BLARAA SYSTEMS</span>
-          <span style={{fontSize:'17px',fontWeight:800,letterSpacing:'-0.02em',color: scrolled ? 'var(--slate-dark)' : '#fff',lineHeight:1.1,fontFamily:'var(--font-heading)'}}>CarbonFile</span>
-        </div>
-      </button>
-      <div style={{display:'flex',alignItems:'center',gap:'32px'}}>
-        {['Products','FAQ','Feedback'].map(label => (
-          <button key={label} className="nav-link" onClick={() => onViewChange(label === 'Products' ? 'landing' : label === 'Feedback' ? 'feedback' : 'landing')}
-            style={{color: scrolled ? 'var(--slate-dark)' : 'rgba(255,255,255,0.92)'}}>
-            {label}
-          </button>
-        ))}
-        <button className="nav-cta" onClick={() => onViewChange('app')}>Launch CBAM →</button>
-      </div>
-    </div>
-  </nav>
-);
-
-// 2. The Admin Panel (STEALTH VERSION)
-const AdminPanel = () => {
-  const [apiKey, setApiKey] = useState('');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [logs, setLogs] = useState([]);
-  const [error, setError] = useState(false); // Simple boolean for red shake effect
-  const [adminLoading, setAdminLoading] = useState(false);
-
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setAdminLoading(true);
-    setError(false);
-
-    try {
-      const API_URL = 'https://cbam-full-app.onrender.com/admin/view-vault';
-      const response = await axios.get(API_URL, {
-        headers: { 'x-admin-key': apiKey }
-      });
-      setLogs(response.data.recent_logs);
-      setIsAuthenticated(true);
-    } catch (err) {
-      setError(true); // Trigger error state
-      setApiKey('');  // Clear input on fail
-    } finally {
-      setAdminLoading(false);
-    }
-  };
-
-  return (
-    <div className="max-w-4xl mx-auto px-4 py-20 min-h-[60vh] flex flex-col justify-center">
-      {!isAuthenticated ? (
-        // STEALTH LOGIN (Just a Box)
-        <div className="flex justify-center w-full">
-          <form onSubmit={handleLogin} className="w-full max-w-sm">
-            <input 
-              type="password" 
-              value={apiKey}
-              onChange={(e) => { setApiKey(e.target.value); setError(false); }}
-              placeholder="" 
-              autoFocus
-              className={`w-full bg-transparent border-b-2 text-center text-3xl font-mono tracking-widest py-4 focus:outline-none transition-colors
-                ${error 
-                  ? 'border-red-500 text-red-600 placeholder-red-300' 
-                  : 'border-slate-300 text-slate-800 focus:border-slate-900'
-                }`}
-            />
-          </form>
-        </div>
-      ) : (
-        // LOGS TABLE SCREEN (Remains the same)
-        <div className="animate-in fade-in duration-500">
-          <div className="flex justify-between items-center mb-8">
-            <h2 className="text-3xl font-bold text-slate-900">Audit Vault</h2>
-            <button onClick={() => window.location.reload()} className="text-sm font-bold text-blue-600 px-3 py-2 rounded-lg hover:bg-blue-50">
-              <RefreshCw className="h-4 w-4 inline mr-2" /> Refresh
-            </button>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left text-slate-600">
-                <thead className="bg-slate-50 text-slate-700 uppercase font-bold text-xs">
-                  <tr>
-                    <th className="px-6 py-4">ID</th>
-                    <th className="px-6 py-4">Timestamp</th>
-                    <th className="px-6 py-4">Company</th>
-                    <th className="px-6 py-4 text-right">Coal (T)</th>
-                    <th className="px-6 py-4 text-right">Direct CO2</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {logs.length === 0 ? (
-                    <tr><td colSpan="5" className="px-6 py-8 text-center text-slate-400">Vault empty.</td></tr>
-                  ) : (
-                    logs.map((log, index) => (
-                      <tr key={index} className="border-b border-slate-100 hover:bg-slate-50">
-                        <td className="px-6 py-4 font-mono text-xs">{log.id}</td>
-                        <td className="px-6 py-4">{log.timestamp}</td>
-                        <td className="px-6 py-4 font-medium text-slate-900">{log.company_name}</td>
-                        <td className="px-6 py-4 text-right font-mono">{log.input_coal_tonnes}</td>
-                        <td className="px-6 py-4 text-right font-mono text-blue-600 font-bold">{log.output_direct_specific}</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-
-// ─── STAT COUNTER (counts up when visible) ───────────────────
 const StatCounter = ({ target, suffix, label }) => {
   const [count, setCount] = useState(0);
   const [counting, setCounting] = useState(false);
@@ -325,701 +556,1096 @@ const StatCounter = ({ target, suffix, label }) => {
   );
 };
 
-// ─── SCROLL REVEAL HOOK ───────────────────────────────────────
 const useReveal = () => {
   useEffect(() => {
     const els = document.querySelectorAll('.reveal');
     const obs = new IntersectionObserver((entries) => {
-      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
+      entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
     }, { threshold: 0.12 });
     els.forEach(el => obs.observe(el));
     return () => obs.disconnect();
   }, []);
 };
 
-// 3. The Landing Page — Premium Animated Hero
-const LandingPage = ({ onLaunch }) => {
-  useReveal();
+const AdminPanel = () => {
+  const [apiKey, setApiKey] = useState('');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [logs, setLogs] = useState([]);
+  const [error, setError] = useState(false);
+  const handleLogin = async (e) => {
+    e.preventDefault(); setError(false);
+    try {
+      const response = await axios.get('https://cbam-full-app.onrender.com/admin/view-vault', { headers: { 'x-admin-key': apiKey } });
+      setLogs(response.data.recent_logs); setIsAuthenticated(true);
+    } catch { setError(true); setApiKey(''); }
+  };
   return (
-    <div>
-      {/* ── HERO SCENE ── */}
-      <section className="hero-scene">
-        {/* Animated sky */}
-        <div className="hero-sky" />
-
-        {/* Cloud 1 */}
-        <svg className="cloud cloud-1" width="200" height="60" viewBox="0 0 200 60" fill="none">
-          <ellipse cx="100" cy="40" rx="90" ry="28" fill="rgba(255,255,255,0.55)" />
-          <ellipse cx="70" cy="32" rx="50" ry="26" fill="rgba(255,255,255,0.55)" />
-          <ellipse cx="130" cy="30" rx="45" ry="24" fill="rgba(255,255,255,0.55)" />
-        </svg>
-        {/* Cloud 2 */}
-        <svg className="cloud cloud-2" width="140" height="44" viewBox="0 0 140 44" fill="none">
-          <ellipse cx="70" cy="30" rx="62" ry="20" fill="rgba(255,255,255,0.4)" />
-          <ellipse cx="48" cy="22" rx="36" ry="18" fill="rgba(255,255,255,0.4)" />
-          <ellipse cx="96" cy="20" rx="32" ry="17" fill="rgba(255,255,255,0.4)" />
-        </svg>
-        {/* Cloud 3 */}
-        <svg className="cloud cloud-3" width="120" height="36" viewBox="0 0 120 36" fill="none">
-          <ellipse cx="60" cy="24" rx="54" ry="16" fill="rgba(255,255,255,0.35)" />
-          <ellipse cx="40" cy="18" rx="30" ry="14" fill="rgba(255,255,255,0.35)" />
-        </svg>
-
-        {/* SVG Illustration — Poweris-style landscape */}
-        <svg className="hero-illustration" viewBox="0 0 1440 700" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg">
-
-          {/* ── SKY TEXTURE STROKES ── */}
-          <rect x="0" y="0" width="1440" height="700" fill="none" />
-          {[0,1,2,3,4].map(i=>(
-            <line key={i} x1="200" y1={40+i*18} x2="900" y2={55+i*18} stroke="rgba(255,255,255,0.07)" strokeWidth="28" strokeLinecap="round"/>
-          ))}
-
-          {/* ── CITY SKYLINE (background, muted teal) ── */}
-          <g opacity="0.55">
-            <rect x="590"  y="180" width="45"  height="280" fill="#3a7f9e" rx="2"/>
-            <rect x="645"  y="130" width="55"  height="330" fill="#4590af" rx="2"/>
-            <rect x="710"  y="160" width="40"  height="300" fill="#3a7f9e" rx="2"/>
-            <rect x="760"  y="100" width="65"  height="360" fill="#4d9fbf" rx="2"/>
-            <rect x="835"  y="150" width="50"  height="310" fill="#3a7f9e" rx="2"/>
-            <rect x="895"  y="190" width="38"  height="270" fill="#3d8aa8" rx="2"/>
-            <rect x="943"  y="140" width="55"  height="320" fill="#4a98b8" rx="2"/>
-            <rect x="1008" y="210" width="42"  height="250" fill="#3a7f9e" rx="2"/>
-            {/* Window dots */}
-            {[600,615,650,665,680,765,780,795,810,845,860,950,965,980].map((x,i)=>(
-              <rect key={i} x={x} y={180+(i%5)*42} width="8" height="12" rx="2" fill="rgba(200,240,255,0.3)"/>
-            ))}
-            {/* Tower / antenna on tallest */}
-            <rect x="787" y="60" width="6" height="40" fill="#3a7f9e"/>
-            <line x1="790" y1="60" x2="810" y2="90" stroke="#3a7f9e" strokeWidth="2"/>
-            <line x1="790" y1="60" x2="770" y2="90" stroke="#3a7f9e" strokeWidth="2"/>
-          </g>
-
-          {/* ── BACK MOUNTAINS (dark, dramatic) ── */}
-          <path d="M0,700 L0,420 Q80,340 200,370 Q320,400 400,300 Q480,200 560,280 Q640,360 720,320 Q800,280 900,350 Q960,390 1040,310 Q1120,230 1200,320 Q1300,410 1440,380 L1440,700 Z" fill="#253c35"/>
-          <path d="M0,700 L0,480 Q100,420 220,440 Q340,460 440,380 Q520,315 620,390 Q700,450 800,420 Q900,390 1000,450 Q1100,510 1200,460 Q1320,410 1440,450 L1440,700 Z" fill="#1e3028"/>
-
-          {/* ── MID GREEN HILLS ── */}
-          <path d="M0,700 L0,560 Q150,490 320,520 Q500,550 680,500 Q820,460 960,510 Q1100,560 1280,530 Q1380,515 1440,525 L1440,700 Z" fill="#3d6e4a"/>
-          <path d="M0,700 L0,590 Q200,540 420,570 Q600,595 780,555 Q950,515 1140,560 Q1300,595 1440,570 L1440,700 Z" fill="#4a7c52"/>
-
-          {/* ── GOLDEN FIELD ── */}
-          <path d="M0,700 L0,620 Q180,580 400,600 Q620,620 840,590 Q1040,562 1240,595 Q1360,612 1440,600 L1440,700 Z" fill="#7ba83c"/>
-          <path d="M0,700 L0,645 Q240,618 480,635 Q700,650 920,625 Q1120,602 1340,630 Q1400,638 1440,632 L1440,700 Z" fill="#8ec444"/>
-
-          {/* ── POWER LINES ── */}
-          {/* Pole 1 */}
-          <line x1="680" y1="540" x2="680" y2="610" stroke="#2a3a30" strokeWidth="3"/>
-          <line x1="666" y1="548" x2="694" y2="548" stroke="#2a3a30" strokeWidth="2"/>
-          {/* Pole 2 */}
-          <line x1="820" y1="530" x2="820" y2="605" stroke="#2a3a30" strokeWidth="3"/>
-          <line x1="806" y1="538" x2="834" y2="538" stroke="#2a3a30" strokeWidth="2"/>
-          {/* Pole 3 */}
-          <line x1="960" y1="535" x2="960" y2="608" stroke="#2a3a30" strokeWidth="3"/>
-          <line x1="946" y1="543" x2="974" y2="543" stroke="#2a3a30" strokeWidth="2"/>
-          {/* Wires */}
-          <path d="M667,548 Q750,560 807,538" fill="none" stroke="#2a3a30" strokeWidth="1.5" opacity="0.7"/>
-          <path d="M807,538 Q890,552 947,543" fill="none" stroke="#2a3a30" strokeWidth="1.5" opacity="0.7"/>
-          <path d="M669,552 Q750,565 809,542" fill="none" stroke="#2a3a30" strokeWidth="1.2" opacity="0.5"/>
-          <path d="M809,542 Q890,557 949,548" fill="none" stroke="#2a3a30" strokeWidth="1.2" opacity="0.5"/>
-
-          {/* ── HOUSES WITH SOLAR PANELS ── */}
-          {/* House 1 */}
-          <g transform="translate(700,530)">
-            <rect x="0" y="0" width="80" height="60" fill="#ede8de"/>
-            <polygon points="-4,0 40,-32 84,0" fill="#ccc0a8"/>
-            <rect x="28" y="20" width="22" height="40" fill="#9b8b6e"/>
-            <rect x="4" y="-24" width="18" height="12" fill="#2d5a8a" opacity="0.85"/>
-            <rect x="25" y="-26" width="18" height="12" fill="#2d5a8a" opacity="0.85"/>
-            <rect x="46" y="-24" width="18" height="12" fill="#2d5a8a" opacity="0.85"/>
-            <line x1="4" y1="-18" x2="22" y2="-18" stroke="rgba(255,255,255,0.5)" strokeWidth="1"/>
-            <line x1="25" y1="-20" x2="43" y2="-20" stroke="rgba(255,255,255,0.5)" strokeWidth="1"/>
-            <rect x="6" y="10" width="14" height="18" rx="1" fill="rgba(160,200,220,0.6)"/>
-            <rect x="58" y="10" width="14" height="18" rx="1" fill="rgba(160,200,220,0.6)"/>
-          </g>
-          {/* House 2 — main large */}
-          <g transform="translate(790,518)">
-            <rect x="0" y="0" width="110" height="72" fill="#f0ece0"/>
-            <polygon points="-5,0 55,-38 115,0" fill="#d4c6a8"/>
-            <rect x="40" y="28" width="28" height="44" fill="#9b8b6e"/>
-            <rect x="4" y="-28" width="22" height="14" fill="#2d5a8a" opacity="0.85"/>
-            <rect x="30" y="-30" width="22" height="14" fill="#2d5a8a" opacity="0.85"/>
-            <rect x="56" y="-28" width="22" height="14" fill="#2d5a8a" opacity="0.85"/>
-            <rect x="82" y="-28" width="22" height="14" fill="#2d5a8a" opacity="0.85"/>
-            <line x1="4" y1="-21" x2="26" y2="-21" stroke="rgba(255,255,255,0.5)" strokeWidth="1"/>
-            <line x1="30" y1="-23" x2="52" y2="-23" stroke="rgba(255,255,255,0.5)" strokeWidth="1"/>
-            <rect x="6" y="12" width="18" height="24" rx="1" fill="rgba(160,200,220,0.6)"/>
-            <rect x="84" y="12" width="18" height="24" rx="1" fill="rgba(160,200,220,0.6)"/>
-          </g>
-          {/* House 3 — right */}
-          <g transform="translate(910,525)">
-            <rect x="0" y="0" width="85" height="65" fill="#ede8de"/>
-            <polygon points="-4,0 42,-30 89,0" fill="#ccc0a8"/>
-            <rect x="30" y="22" width="24" height="43" fill="#9b8b6e"/>
-            <rect x="4" y="-22" width="20" height="12" fill="#2d5a8a" opacity="0.85"/>
-            <rect x="28" y="-24" width="20" height="12" fill="#2d5a8a" opacity="0.85"/>
-            <rect x="52" y="-22" width="20" height="12" fill="#2d5a8a" opacity="0.85"/>
-          </g>
-
-          {/* ── WIND TURBINES (animateTransform — rotation center explicit) ── */}
-
-          {/* Turbine A — tallest, leftmost */}
-          <g transform="translate(760,250)">
-            <polygon points="-5,0 5,0 3,320 -3,320" fill="#f0ede8"/>
-            <g>
-              <animateTransform attributeName="transform" type="rotate" from="0 0 0" to="360 0 0" dur="9s" repeatCount="indefinite"/>
-              <path d="M-4,6 C-5,-25 -2,-95 0,-118 C2,-95 5,-25 4,6 Z" fill="white" opacity="0.96"/>
-              <path d="M-4,6 C-5,-25 -2,-95 0,-118 C2,-95 5,-25 4,6 Z" fill="white" opacity="0.96" transform="rotate(120 0 0)"/>
-              <path d="M-4,6 C-5,-25 -2,-95 0,-118 C2,-95 5,-25 4,6 Z" fill="white" opacity="0.96" transform="rotate(240 0 0)"/>
-            </g>
-            <circle cx="0" cy="0" r="9" fill="#d8d4ce"/>
-          </g>
-
-          {/* Turbine B */}
-          <g transform="translate(890,270)">
-            <polygon points="-4,0 4,0 2.5,285 -2.5,285" fill="#f0ede8"/>
-            <g>
-              <animateTransform attributeName="transform" type="rotate" from="60 0 0" to="420 0 0" dur="11s" repeatCount="indefinite"/>
-              <path d="M-3.5,5 C-4,-20 -2,-82 0,-102 C2,-82 4,-20 3.5,5 Z" fill="white" opacity="0.94"/>
-              <path d="M-3.5,5 C-4,-20 -2,-82 0,-102 C2,-82 4,-20 3.5,5 Z" fill="white" opacity="0.94" transform="rotate(120 0 0)"/>
-              <path d="M-3.5,5 C-4,-20 -2,-82 0,-102 C2,-82 4,-20 3.5,5 Z" fill="white" opacity="0.94" transform="rotate(240 0 0)"/>
-            </g>
-            <circle cx="0" cy="0" r="8" fill="#d8d4ce"/>
-          </g>
-
-          {/* Turbine C */}
-          <g transform="translate(1010,280)">
-            <polygon points="-4,0 4,0 2.5,265 -2.5,265" fill="#f0ede8"/>
-            <g>
-              <animateTransform attributeName="transform" type="rotate" from="120 0 0" to="480 0 0" dur="8s" repeatCount="indefinite"/>
-              <path d="M-3,5 C-4,-18 -2,-72 0,-90 C2,-72 4,-18 3,5 Z" fill="white" opacity="0.92"/>
-              <path d="M-3,5 C-4,-18 -2,-72 0,-90 C2,-72 4,-18 3,5 Z" fill="white" opacity="0.92" transform="rotate(120 0 0)"/>
-              <path d="M-3,5 C-4,-18 -2,-72 0,-90 C2,-72 4,-18 3,5 Z" fill="white" opacity="0.92" transform="rotate(240 0 0)"/>
-            </g>
-            <circle cx="0" cy="0" r="7" fill="#d8d4ce"/>
-          </g>
-
-          {/* Turbine D — rightmost, smaller (depth) */}
-          <g transform="translate(1130,295)">
-            <polygon points="-3.5,0 3.5,0 2,245 -2,245" fill="#f0ede8"/>
-            <g>
-              <animateTransform attributeName="transform" type="rotate" from="200 0 0" to="560 0 0" dur="10s" repeatCount="indefinite"/>
-              <path d="M-3,4 C-3.5,-15 -1.5,-62 0,-78 C1.5,-62 3.5,-15 3,4 Z" fill="white" opacity="0.9"/>
-              <path d="M-3,4 C-3.5,-15 -1.5,-62 0,-78 C1.5,-62 3.5,-15 3,4 Z" fill="white" opacity="0.9" transform="rotate(120 0 0)"/>
-              <path d="M-3,4 C-3.5,-15 -1.5,-62 0,-78 C1.5,-62 3.5,-15 3,4 Z" fill="white" opacity="0.9" transform="rotate(240 0 0)"/>
-            </g>
-            <circle cx="0" cy="0" r="6" fill="#d8d4ce"/>
-          </g>
-
-          {/* ── FOREGROUND DARK VEGETATION ── */}
-          {/* Dark bush clusters */}
-          <ellipse cx="80"   cy="680" rx="90"  ry="50" fill="#0e2218"/>
-          <ellipse cx="180"  cy="695" rx="70"  ry="40" fill="#122a1e"/>
-          <ellipse cx="1300" cy="682" rx="85"  ry="48" fill="#0e2218"/>
-          <ellipse cx="1400" cy="690" rx="65"  ry="38" fill="#122a1e"/>
-          <ellipse cx="1200" cy="695" rx="55"  ry="35" fill="#0f2318"/>
-          {/* Leaf shapes foreground left */}
-          <path d="M0,700 Q30,640 60,680 Q90,700 100,700 Z" fill="#0a1a10"/>
-          <path d="M50,700 Q90,630 130,665 Q160,690 170,700 Z" fill="#0c2015"/>
-          <path d="M1280,700 Q1330,635 1370,668 Q1400,692 1420,700 Z" fill="#0a1a10"/>
-          <path d="M1360,700 Q1390,645 1420,670 Q1440,690 1440,700 Z" fill="#0c2015"/>
-
-          {/* ── WILDFLOWERS ── */}
-          {[
-            {x:55, y:650},{x:82, y:662},{x:108,y:645},
-            {x:135,y:658},{x:160,y:648}
-          ].map((p,i)=>(
-            <g key={i}>
-              <line x1={p.x} y1={p.y} x2={p.x} y2={p.y-20} stroke="#3a6e40" strokeWidth="2"/>
-              <circle cx={p.x} cy={p.y-22} r="7" fill={i%2===0?"#fffbea":"#fff"} opacity="0.95"/>
-              <circle cx={p.x} cy={p.y-22} r="3" fill="#f0c040" opacity="0.9"/>
-            </g>
-          ))}
-
-        </svg>
-
-
-        {/* Hero Text Content */}
-        <div className="hero-content">
-          <span className="hero-badge">
-            <Leaf size={12} /> EU CBAM Compliance
-          </span>
-          <h1 className="hero-headline">
-            Start carbon<br/>compliance from<br/>your factory
-          </h1>
-          <p className="hero-sub">
-            EU-ready CBAM reports in minutes. Accurate embedded emissions calculations, official XML schema, complete audit trail for Indian exporters.
-          </p>
-          <div className="hero-cta-group">
-            <button className="btn-primary" onClick={onLaunch}>
-              Generate Report <ArrowRight size={16} />
-            </button>
-            <button className="btn-secondary" onClick={() => document.getElementById('products')?.scrollIntoView({behavior:'smooth'})}>
-              Learn More
-            </button>
-          </div>
-          <div className="hero-trust">
-            {['EU Schema Compliant','Instant XML','Audit Trail'].map(t => (
-              <div key={t} className="trust-item">
-                <CheckCircle2 size={14} style={{color:'rgba(255,255,255,0.9)'}} />
-                <span>{t}</span>
-              </div>
-            ))}
-          </div>
+    <div className="max-w-4xl mx-auto px-4 py-20 min-h-[60vh] flex flex-col justify-center">
+      {!isAuthenticated ? (
+        <div className="flex justify-center w-full">
+          <form onSubmit={handleLogin} className="w-full max-w-sm">
+            <input type="password" value={apiKey} onChange={(e) => { setApiKey(e.target.value); setError(false); }} placeholder="" autoFocus
+              className={`w-full bg-transparent border-b-2 text-center text-3xl font-mono tracking-widest py-4 focus:outline-none transition-colors ${error ? 'border-red-500 text-red-600' : 'border-slate-300 text-slate-800 focus:border-slate-900'}`} />
+          </form>
         </div>
-
-        {/* Scroll indicator */}
-        <div className="scroll-indicator" onClick={() => document.getElementById('stats')?.scrollIntoView({behavior:'smooth'})}>
-          <div className="scroll-mouse"><div className="scroll-dot" /></div>
-          <span>Scroll</span>
-        </div>
-      </section>
-
-      {/* ── STATS STRIP ── */}
-      <div id="stats" className="stats-strip">
-        <div className="max-w-4xl mx-auto px-6 grid grid-cols-3 gap-8">
-          <StatCounter target={2026} suffix="" label="CBAM Full Enforcement" />
-          <StatCounter target={6} suffix="" label="Covered Product Sectors" />
-          <StatCounter target={100} suffix="%" label="Official EU XML Format" />
-        </div>
-      </div>
-
-      {/* ── PRODUCTS ── */}
-      <section id="products" className="py-24 bg-white">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="reveal mb-14">
-            <span className="section-chip"><Leaf size={11} /> Our Suite</span>
-            <h2 className="section-title">Compliance tools<br/>built for India</h2>
-            <p className="section-sub">Everything an Indian exporter needs to meet EU CBAM obligations — from calculation to submission-ready files.</p>
+      ) : (
+        <div>
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-3xl font-bold text-slate-900">Audit Vault</h2>
+            <button onClick={() => window.location.reload()} className="text-sm font-bold text-blue-600 px-3 py-2 rounded-lg hover:bg-blue-50"><RefreshCw className="h-4 w-4 inline mr-2" /> Refresh</button>
           </div>
-          <div className="grid md:grid-cols-2 gap-8">
-            <div className="product-card reveal reveal-delay-1" onClick={onLaunch}>
-              <div style={{position:'absolute',top:24,right:24}}><span className="card-badge badge-live">LIVE</span></div>
-              <div className="card-icon-wrap"><FileCheck size={26} style={{color:'var(--navy)'}} /></div>
-              <h3 className="card-title">CarbonFile CBAM</h3>
-              <p style={{color:'#5a7184',fontSize:'0.92rem',margin:'10px 0 18px',lineHeight:1.65}}>Automated EU Carbon Border Adjustment Mechanism reporting. Includes XML generation and secure audit vault.</p>
-              <ul style={{listStyle:'none',display:'flex',flexDirection:'column',gap:10,marginBottom:22}}>
-                {['Direct & Indirect emissions calculation','Official EU XML schema (XSD)','PDF report for stakeholders'].map(f=>(
-                  <li key={f} style={{display:'flex',alignItems:'center',gap:8,fontSize:'0.88rem',color:'#4a6070'}}>
-                    <CheckCircle2 size={15} style={{color:'#16a34a',flexShrink:0}} />{f}
-                  </li>
-                ))}
-              </ul>
-              <span style={{color:'var(--navy)',fontWeight:700,fontSize:'0.9rem',display:'flex',alignItems:'center',gap:6}}>Launch Application <ArrowRight size={15} /></span>
-            </div>
-            <div className="product-card disabled">
-              <div style={{position:'absolute',top:24,right:24}}><span className="card-badge badge-soon">COMING SOON</span></div>
-              <div className="card-icon-wrap" style={{background:'linear-gradient(135deg,#f1f5f9,#e2e8f0)'}}><BarChart3 size={26} style={{color:'#94a3b8'}} /></div>
-              <h3 className="card-title" style={{color:'#94a3b8'}}>Supply Chain Analytics</h3>
-              <p style={{color:'#94a3b8',fontSize:'0.92rem',margin:'10px 0 18px',lineHeight:1.65}}>Next-generation tracking for raw material sourcing and scope 3 emissions. Coming Q4 2026.</p>
-              <span style={{color:'#94a3b8',fontWeight:700,fontSize:'0.9rem',display:'flex',alignItems:'center',gap:6}}>In Development <Lock size={14} /></span>
+          <div className="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left text-slate-600">
+                <thead className="bg-slate-50 text-slate-700 uppercase font-bold text-xs">
+                  <tr><th className="px-6 py-4">ID</th><th className="px-6 py-4">Timestamp</th><th className="px-6 py-4">Company</th><th className="px-6 py-4 text-right">Coal (T)</th><th className="px-6 py-4 text-right">Direct CO2</th></tr>
+                </thead>
+                <tbody>
+                  {logs.length === 0 ? <tr><td colSpan="5" className="px-6 py-8 text-center text-slate-400">Vault empty.</td></tr> : logs.map((log, index) => (
+                    <tr key={index} className="border-b border-slate-100 hover:bg-slate-50">
+                      <td className="px-6 py-4 font-mono text-xs">{log.id}</td>
+                      <td className="px-6 py-4">{log.timestamp}</td>
+                      <td className="px-6 py-4 font-medium text-slate-900">{log.company_name}</td>
+                      <td className="px-6 py-4 text-right font-mono">{log.input_coal_tonnes}</td>
+                      <td className="px-6 py-4 text-right font-mono text-blue-600 font-bold">{log.output_direct_specific}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
-      </section>
-
-      {/* ── HOW IT WORKS ── */}
-      <section className="py-24" style={{background:'linear-gradient(to bottom,#f8fbff,#fff)'}}>
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="reveal text-center mb-16">
-            <span className="section-chip"><Zap size={11} /> How It Works</span>
-            <h2 className="section-title" style={{textAlign:'center'}}>Three steps to compliance</h2>
-          </div>
-          <div className="steps-container">
-            {[
-              {n:'01',icon:<Building2 size={22} style={{color:'var(--navy)'}}/>,title:'Enter Company Info',desc:'Provide your company name, Import Export code, GSTIN and factory location to identify your entity.'},
-              {n:'02',icon:<Factory size={22} style={{color:'var(--navy)'}}/>,title:'Add Production Data',desc:'Enter monthly production output, coal consumption in tonnes, and electricity usage in kWh.'},
-              {n:'03',icon:<FileCheck size={22} style={{color:'var(--navy)'}}/>,title:'Download Reports',desc:'Instantly receive an EU-compliant XML file and a human-readable PDF ready for stakeholders.'},
-            ].map((s,i)=>(
-              <div key={i} className={`step-card reveal reveal-delay-${i+1}`}>
-                <div className="step-number">{s.n}</div>
-                <div style={{marginBottom:10}}>{s.icon}</div>
-                <div className="step-title">{s.title}</div>
-                <p className="step-desc">{s.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── FAQ ── */}
-      <div id="faq-section"><FAQSection /></div>
+      )}
     </div>
   );
 };
 
-
-
-// 3b. Feedback Form Component
 const FeedbackForm = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    company: '',
-    message: '',
-    rating: 5
-  });
+  const [formData, setFormData] = useState({ name: '', email: '', company: '', message: '', rating: 5 });
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
-
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleRating = (value) => {
-    setFormData({ ...formData, rating: value });
-  };
-
+  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleRating = (value) => setFormData({ ...formData, rating: value });
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-
-    try {
-      const API_URL = 'https://cbam-full-app.onrender.com/submit-feedback';
-      await axios.post(API_URL, formData);
-      setSubmitted(true);
-    } catch (err) {
-      setError('Failed to submit feedback. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+    e.preventDefault(); setLoading(true); setError('');
+    try { await axios.post('https://cbam-full-app.onrender.com/submit-feedback', formData); setSubmitted(true); }
+    catch { setError('Failed to submit feedback. Please try again.'); }
+    finally { setLoading(false); }
   };
-
-  if (submitted) {
-    return (
-      <div className="animate-in fade-in duration-500 max-w-2xl mx-auto px-4 py-20 text-center">
-        <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl p-12">
-          <div className="bg-emerald-100 h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-6">
-            <CheckCircle2 className="h-8 w-8 text-emerald-600" />
-          </div>
-          <h2 className="text-2xl font-bold text-emerald-800 mb-2">Thank You!</h2>
-          <p className="text-emerald-700">Your feedback has been received. We appreciate your input.</p>
-        </div>
+  if (submitted) return (
+    <div className="max-w-2xl mx-auto px-4 py-20 text-center">
+      <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl p-12">
+        <div className="bg-emerald-100 h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-6"><CheckCircle2 className="h-8 w-8 text-emerald-600" /></div>
+        <h2 className="text-2xl font-bold text-emerald-800 mb-2">Thank You!</h2>
+        <p className="text-emerald-700">Your feedback has been received.</p>
       </div>
-    );
-  }
-
+    </div>
+  );
   return (
-    <div className="animate-in fade-in duration-500 max-w-2xl mx-auto px-4 py-12">
+    <div className="max-w-2xl mx-auto px-4 py-12">
       <div className="text-center mb-10">
-        <div className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-700 px-4 py-2 rounded-full text-sm font-bold mb-4">
-          <MessageSquare className="h-4 w-4" /> We Value Your Feedback
-        </div>
+        <div className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-700 px-4 py-2 rounded-full text-sm font-bold mb-4"><MessageSquare className="h-4 w-4" /> We Value Your Feedback</div>
         <h2 className="text-3xl font-extrabold text-slate-900">Help Us Improve</h2>
-        <p className="text-slate-600 mt-2">Share your experience with CarbonFile by BLARAA Systems</p>
+        <p className="text-slate-600 mt-2">Share your experience with BLARAA Systems</p>
       </div>
-
       <form onSubmit={handleSubmit} className="bg-white/80 backdrop-blur-sm border border-emerald-100 rounded-2xl p-8 shadow-xl space-y-6">
-        {/* Rating */}
         <div>
           <label className="block text-sm font-bold text-slate-700 mb-3">How would you rate our service?</label>
           <div className="flex gap-2">
             {[1, 2, 3, 4, 5].map((star) => (
-              <button
-                key={star}
-                type="button"
-                onClick={() => handleRating(star)}
-                className={`p-2 rounded-lg transition ${formData.rating >= star ? 'text-yellow-400' : 'text-slate-300'} hover:scale-110`}
-              >
+              <button key={star} type="button" onClick={() => handleRating(star)} className={`p-2 rounded-lg transition ${formData.rating >= star ? 'text-yellow-400' : 'text-slate-300'} hover:scale-110`}>
                 <Star className="h-8 w-8" fill={formData.rating >= star ? 'currentColor' : 'none'} />
               </button>
             ))}
           </div>
         </div>
-
-        {/* Name & Email */}
         <div className="grid md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-bold text-slate-700 mb-2">Name *</label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              required
-              className="w-full px-4 py-3 border border-emerald-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition bg-white/50"
-              placeholder="Your name"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-bold text-slate-700 mb-2">Email *</label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-              className="w-full px-4 py-3 border border-emerald-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition bg-white/50"
-              placeholder="your@email.com"
-            />
-          </div>
+          <div><label className="block text-sm font-bold text-slate-700 mb-2">Name *</label><input type="text" name="name" value={formData.name} onChange={handleChange} required className="w-full px-4 py-3 border border-emerald-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition bg-white/50" placeholder="Your name" /></div>
+          <div><label className="block text-sm font-bold text-slate-700 mb-2">Email *</label><input type="email" name="email" value={formData.email} onChange={handleChange} required className="w-full px-4 py-3 border border-emerald-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition bg-white/50" placeholder="your@email.com" /></div>
         </div>
-
-        {/* Company */}
-        <div>
-          <label className="block text-sm font-bold text-slate-700 mb-2">Company (Optional)</label>
-          <input
-            type="text"
-            name="company"
-            value={formData.company}
-            onChange={handleChange}
-            className="w-full px-4 py-3 border border-emerald-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition bg-white/50"
-            placeholder="Your company name"
-          />
-        </div>
-
-        {/* Message */}
-        <div>
-          <label className="block text-sm font-bold text-slate-700 mb-2">Your Feedback *</label>
-          <textarea
-            name="message"
-            value={formData.message}
-            onChange={handleChange}
-            required
-            rows={4}
-            className="w-full px-4 py-3 border border-emerald-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition resize-none bg-white/50"
-            placeholder="Tell us about your experience..."
-          />
-        </div>
-
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
-            {error}
-          </div>
-        )}
-
-        {/* Submit */}
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {loading ? (
-            <><RefreshCw className="h-5 w-5 animate-spin" /> Submitting...</>
-          ) : (
-            <><Send className="h-5 w-5" /> Submit Feedback</>
-          )}
+        <div><label className="block text-sm font-bold text-slate-700 mb-2">Company (Optional)</label><input type="text" name="company" value={formData.company} onChange={handleChange} className="w-full px-4 py-3 border border-emerald-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition bg-white/50" placeholder="Your company name" /></div>
+        <div><label className="block text-sm font-bold text-slate-700 mb-2">Your Feedback *</label><textarea name="message" value={formData.message} onChange={handleChange} required rows={4} className="w-full px-4 py-3 border border-emerald-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition resize-none bg-white/50" placeholder="Tell us about your experience..." /></div>
+        {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">{error}</div>}
+        <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition shadow-lg disabled:opacity-50">
+          {loading ? <><RefreshCw className="h-5 w-5 animate-spin" /> Submitting...</> : <><Send className="h-5 w-5" /> Submit Feedback</>}
         </button>
       </form>
     </div>
   );
 };
 
-// 4. The Dashboard (UPDATED WITH PROGRESS STEPS, LIVE PREVIEW, GREEN THEME)
 const Dashboard = ({ formData, setFormData, loading, loadingPdf, status, onSubmit, onSubmitPdf, onChange }) => {
-  // Calculate current step based on form completion
   const getStep = () => {
     if (!formData.company_name && !formData.company_id && !formData.city) return 1;
     if (!formData.production_tonnes && !formData.coal_tonnes && !formData.electricity_kwh) return 2;
     return 3;
   };
-
   return (
-  <div className="animate-in slide-in-from-bottom-4 duration-500 min-h-screen bg-gradient-to-b from-white to-emerald-50/30">
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      
-      {/* Progress Steps */}
-      <ProgressSteps currentStep={getStep()} />
-      
-      <div className="lg:grid lg:grid-cols-12 lg:gap-12 items-start">
-      
-      {/* LEFT COLUMN: The "About / Logic" Section */}
-      <div className="lg:col-span-5 mb-10 lg:mb-0 space-y-6">
-        
-        {/* Title Block */}
-        <div className="bg-white/70 backdrop-blur-sm border border-emerald-100 rounded-2xl p-6">
-           <span className="bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-700 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">
-             CarbonFile CBAM • v2.0
-           </span>
-           <h2 className="text-3xl font-extrabold text-slate-900 mt-4">
-             EU Compliance Engine
-           </h2>
-           <p className="text-slate-600 mt-4 text-lg leading-relaxed">
-             Generate EU-compliant CBAM reports with accurate emissions calculations and official XML format.
-           </p>
-        </div>
-
-        {/* Live Calculation Preview */}
-        <LivePreview formData={formData} />
-
-        {/* How It Works Guide */}
-        <div className="bg-white/70 backdrop-blur-sm border border-emerald-100 rounded-2xl p-6 space-y-5">
-          <h3 className="text-sm font-bold text-emerald-800 uppercase tracking-widest border-b border-emerald-100 pb-2 flex items-center gap-2">
-            <Zap className="h-4 w-4" /> How It Works
-          </h3>
-          
-          {/* Step 1 */}
-          <div className="flex gap-4">
-            <div className="bg-gradient-to-br from-emerald-100 to-teal-100 p-2.5 rounded-xl h-fit shadow-sm">
-              <Building2 className="h-5 w-5 text-emerald-600" />
+    <div className="min-h-screen bg-gradient-to-b from-white to-emerald-50/30">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <ProgressSteps currentStep={getStep()} />
+        <div className="lg:grid lg:grid-cols-12 lg:gap-12 items-start">
+          <div className="lg:col-span-5 mb-10 lg:mb-0 space-y-6">
+            <div className="bg-white/70 backdrop-blur-sm border border-emerald-100 rounded-2xl p-6">
+              <span className="bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-700 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">CarbonFile CBAM • v2.0</span>
+              <h2 className="text-3xl font-extrabold text-slate-900 mt-4">EU Compliance Engine</h2>
+              <p className="text-slate-600 mt-4 text-lg leading-relaxed">Generate EU-compliant CBAM reports with accurate emissions calculations and official XML format.</p>
             </div>
-            <div>
-              <h4 className="font-bold text-slate-900 text-sm">1. Enter Company Info</h4>
-              <p className="text-xs text-slate-500 mt-1">
-                Provide your company name, tax ID, and factory location.
-              </p>
-            </div>
-          </div>
-
-          {/* Step 2 */}
-          <div className="flex gap-4">
-            <div className="bg-gradient-to-br from-emerald-100 to-teal-100 p-2.5 rounded-xl h-fit shadow-sm">
-              <Factory className="h-5 w-5 text-emerald-600" />
-            </div>
-            <div>
-              <h4 className="font-bold text-slate-900 text-sm">2. Add Production Data</h4>
-              <p className="text-xs text-slate-500 mt-1">
-                Enter monthly production, coal consumption, and electricity usage.
-              </p>
-            </div>
-          </div>
-
-          {/* Step 3 */}
-          <div className="flex gap-4">
-            <div className="bg-gradient-to-br from-emerald-100 to-teal-100 p-2.5 rounded-xl h-fit shadow-sm">
-              <FileCheck className="h-5 w-5 text-emerald-600" />
-            </div>
-            <div>
-              <h4 className="font-bold text-slate-900 text-sm">3. Generate Reports</h4>
-              <p className="text-xs text-slate-500 mt-1">
-                Download EU-compliant XML and human-readable PDF reports.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Security Badge */}
-        <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 p-4 rounded-xl flex items-start gap-3">
-           <ShieldCheck className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
-           <div>
-             <span className="font-bold text-emerald-800 text-sm block">Audit Trail Active</span>
-             <p className="text-xs text-emerald-600 mt-1">
-               Every report is timestamped and logged for compliance verification.
-             </p>
-           </div>
-        </div>
-      </div>
-
-      {/* RIGHT COLUMN: The Form (Generator) */}
-      <div className="lg:col-span-7">
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-emerald-100 overflow-hidden">
-          <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-8 py-4 flex justify-between items-center">
-            <h3 className="text-white font-bold flex items-center gap-2">
-              <Leaf className="h-4 w-4" /> Report Generator
-            </h3>
-            <span className="text-emerald-200 text-xs font-mono bg-emerald-700/50 px-2 py-1 rounded">SECURE</span>
-          </div>
-          
-          <form onSubmit={onSubmit} className="p-8 space-y-8">
-            {/* Organization Section */}
-            <div className="space-y-4">
-               <h3 className="text-xs font-bold text-emerald-600 uppercase tracking-wider flex items-center gap-2">
-                 <Building2 className="h-4 w-4" /> Step 1: Organization Details
-               </h3>
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                 <div className="relative">
-                   <div className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-500"><Building2 className="h-4 w-4" /></div>
-                   <input name="company_name" required placeholder="Company Name" value={formData.company_name} onChange={onChange} className="w-full pl-10 pr-4 py-3 rounded-xl border border-emerald-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition bg-white/50" />
-                 </div>
-                 <div className="relative">
-                   <div className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-500"><FileText className="h-4 w-4" /></div>
-                   <input name="company_id" required placeholder="IE Code / GSTIN" value={formData.company_id} onChange={onChange} className="w-full pl-10 pr-4 py-3 rounded-xl border border-emerald-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition bg-white/50" />
-                 </div>
-               </div>
-               <div className="relative">
-                 <div className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-500"><Globe className="h-4 w-4" /></div>
-                 <input name="city" required placeholder="Factory City / Location" value={formData.city} onChange={onChange} className="w-full pl-10 pr-4 py-3 rounded-xl border border-emerald-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition bg-white/50" />
-               </div>
-            </div>
-            
-            <hr className="border-emerald-100" />
-
-            {/* Metrics Section */}
-            <div className="space-y-4">
-              <h3 className="text-xs font-bold text-emerald-600 uppercase tracking-wider flex items-center gap-2">
-                <Factory className="h-4 w-4" /> Step 2: Production Metrics (Monthly)
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                 <div className="bg-gradient-to-br from-white to-emerald-50/50 border border-emerald-200 rounded-xl p-4">
-                   <label className="text-[10px] font-bold text-emerald-600 uppercase flex items-center gap-1">
-                     <Factory className="h-3 w-3" /> Production
-                   </label>
-                   <div className="relative mt-2">
-                      <input name="production_tonnes" type="number" step="0.01" required value={formData.production_tonnes} onChange={onChange} className="w-full pl-3 pr-10 py-3 rounded-lg border border-emerald-200 focus:ring-2 focus:ring-emerald-500 outline-none font-mono text-lg bg-white" />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-emerald-500 font-bold bg-emerald-100 px-2 py-1 rounded">T</span>
-                   </div>
-                 </div>
-                 <div className="bg-gradient-to-br from-white to-orange-50/50 border border-orange-200 rounded-xl p-4">
-                   <label className="text-[10px] font-bold text-orange-600 uppercase flex items-center gap-1">
-                     <Flame className="h-3 w-3" /> Coal Used
-                   </label>
-                   <div className="relative mt-2">
-                      <input name="coal_tonnes" type="number" step="0.01" required value={formData.coal_tonnes} onChange={onChange} className="w-full pl-3 pr-10 py-3 rounded-lg border border-orange-200 focus:ring-2 focus:ring-orange-500 outline-none font-mono text-lg bg-white" />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-orange-500 font-bold bg-orange-100 px-2 py-1 rounded">T</span>
-                   </div>
-                 </div>
-                 <div className="bg-gradient-to-br from-white to-yellow-50/50 border border-yellow-300 rounded-xl p-4">
-                   <label className="text-[10px] font-bold text-yellow-600 uppercase flex items-center gap-1">
-                     <Zap className="h-3 w-3" /> Electricity
-                   </label>
-                   <div className="relative mt-2">
-                      <input name="electricity_kwh" type="number" step="0.01" required value={formData.electricity_kwh} onChange={onChange} className="w-full pl-3 pr-14 py-3 rounded-lg border border-yellow-300 focus:ring-2 focus:ring-yellow-500 outline-none font-mono text-lg bg-white" />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-yellow-600 font-bold bg-yellow-100 px-2 py-1 rounded">kWh</span>
-                   </div>
-                 </div>
-              </div>
-            </div>
-
-            <hr className="border-emerald-100" />
-
-            {/* Step 3: Generate */}
-            <div className="space-y-4">
-              <h3 className="text-xs font-bold text-emerald-600 uppercase tracking-wider flex items-center gap-2">
-                <Download className="h-4 w-4" /> Step 3: Generate Reports
-              </h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <button type="submit" disabled={loading || loadingPdf} className={`py-4 rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-all ${loading ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:from-emerald-700 hover:to-teal-700 hover:shadow-xl hover:scale-[1.02]'}`}>
-                  {loading ? <><RefreshCw className="h-5 w-5 animate-spin" /> Generating...</> : <><Download className="h-5 w-5" /> Download XML</>}
-                </button>
-                <button type="button" onClick={onSubmitPdf} disabled={loading || loadingPdf} className={`py-4 rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-all ${loadingPdf ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white hover:from-teal-700 hover:to-cyan-700 hover:shadow-xl hover:scale-[1.02]'}`}>
-                  {loadingPdf ? <><RefreshCw className="h-5 w-5 animate-spin" /> Generating...</> : <><FileText className="h-5 w-5" /> Download PDF</>}
-                </button>
-              </div>
-            </div>
-
-            {status === 'success' && (
-              <div className="animate-in fade-in slide-in-from-top-2 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 text-emerald-800 rounded-xl flex items-center gap-3 text-sm shadow-sm">
-                <div className="bg-white p-2 rounded-full shadow-sm"><CheckCircle2 className="h-5 w-5 text-emerald-600" /></div>
-                <div>
-                  <span className="font-bold block">Success!</span>
-                  <span className="text-emerald-600">Report generated & audit log secured.</span>
+            <LivePreview formData={formData} />
+            <div className="bg-white/70 backdrop-blur-sm border border-emerald-100 rounded-2xl p-6 space-y-5">
+              <h3 className="text-sm font-bold text-emerald-800 uppercase tracking-widest border-b border-emerald-100 pb-2 flex items-center gap-2"><Zap className="h-4 w-4" /> How It Works</h3>
+              {[{ icon: Building2, title: '1. Enter Company Info', desc: 'Provide your company name, tax ID, and factory location.' }, { icon: Factory, title: '2. Add Production Data', desc: 'Enter monthly production, coal consumption, and electricity usage.' }, { icon: FileCheck, title: '3. Generate Reports', desc: 'Download EU-compliant XML and human-readable PDF reports.' }].map(({ icon: Icon, title, desc }, i) => (
+                <div key={i} className="flex gap-4">
+                  <div className="bg-gradient-to-br from-emerald-100 to-teal-100 p-2.5 rounded-xl h-fit shadow-sm"><Icon className="h-5 w-5 text-emerald-600" /></div>
+                  <div><h4 className="font-bold text-slate-900 text-sm">{title}</h4><p className="text-xs text-slate-500 mt-1">{desc}</p></div>
                 </div>
+              ))}
+            </div>
+            <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 p-4 rounded-xl flex items-start gap-3">
+              <ShieldCheck className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
+              <div><span className="font-bold text-emerald-800 text-sm block">Audit Trail Active</span><p className="text-xs text-emerald-600 mt-1">Every report is timestamped and logged for compliance verification.</p></div>
+            </div>
+          </div>
+          <div className="lg:col-span-7">
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-emerald-100 overflow-hidden">
+              <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-8 py-4 flex justify-between items-center">
+                <h3 className="text-white font-bold flex items-center gap-2"><Leaf className="h-4 w-4" /> Report Generator</h3>
+                <span className="text-emerald-200 text-xs font-mono bg-emerald-700/50 px-2 py-1 rounded">SECURE</span>
               </div>
-            )}
-          </form>
+              <form onSubmit={onSubmit} className="p-8 space-y-8">
+                <div className="space-y-4">
+                  <h3 className="text-xs font-bold text-emerald-600 uppercase tracking-wider flex items-center gap-2"><Building2 className="h-4 w-4" /> Step 1: Organization Details</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="relative"><div className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-500"><Building2 className="h-4 w-4" /></div><input name="company_name" required placeholder="Company Name" value={formData.company_name} onChange={onChange} className="w-full pl-10 pr-4 py-3 rounded-xl border border-emerald-200 focus:ring-2 focus:ring-emerald-500 outline-none transition bg-white/50" /></div>
+                    <div className="relative"><div className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-500"><FileText className="h-4 w-4" /></div><input name="company_id" required placeholder="IE Code / GSTIN" value={formData.company_id} onChange={onChange} className="w-full pl-10 pr-4 py-3 rounded-xl border border-emerald-200 focus:ring-2 focus:ring-emerald-500 outline-none transition bg-white/50" /></div>
+                  </div>
+                  <div className="relative"><div className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-500"><Globe className="h-4 w-4" /></div><input name="city" required placeholder="Factory City / Location" value={formData.city} onChange={onChange} className="w-full pl-10 pr-4 py-3 rounded-xl border border-emerald-200 focus:ring-2 focus:ring-emerald-500 outline-none transition bg-white/50" /></div>
+                </div>
+                <hr className="border-emerald-100" />
+                <div className="space-y-4">
+                  <h3 className="text-xs font-bold text-emerald-600 uppercase tracking-wider flex items-center gap-2"><Factory className="h-4 w-4" /> Step 2: Production Metrics (Monthly)</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-gradient-to-br from-white to-emerald-50/50 border border-emerald-200 rounded-xl p-4"><label className="text-[10px] font-bold text-emerald-600 uppercase flex items-center gap-1"><Factory className="h-3 w-3" /> Production</label><div className="relative mt-2"><input name="production_tonnes" type="number" step="0.01" required value={formData.production_tonnes} onChange={onChange} className="w-full pl-3 pr-10 py-3 rounded-lg border border-emerald-200 focus:ring-2 focus:ring-emerald-500 outline-none font-mono text-lg bg-white" /><span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-emerald-500 font-bold bg-emerald-100 px-2 py-1 rounded">T</span></div></div>
+                    <div className="bg-gradient-to-br from-white to-orange-50/50 border border-orange-200 rounded-xl p-4"><label className="text-[10px] font-bold text-orange-600 uppercase flex items-center gap-1"><Flame className="h-3 w-3" /> Coal Used</label><div className="relative mt-2"><input name="coal_tonnes" type="number" step="0.01" required value={formData.coal_tonnes} onChange={onChange} className="w-full pl-3 pr-10 py-3 rounded-lg border border-orange-200 focus:ring-2 focus:ring-orange-500 outline-none font-mono text-lg bg-white" /><span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-orange-500 font-bold bg-orange-100 px-2 py-1 rounded">T</span></div></div>
+                    <div className="bg-gradient-to-br from-white to-yellow-50/50 border border-yellow-300 rounded-xl p-4"><label className="text-[10px] font-bold text-yellow-600 uppercase flex items-center gap-1"><Zap className="h-3 w-3" /> Electricity</label><div className="relative mt-2"><input name="electricity_kwh" type="number" step="0.01" required value={formData.electricity_kwh} onChange={onChange} className="w-full pl-3 pr-14 py-3 rounded-lg border border-yellow-300 focus:ring-2 focus:ring-yellow-500 outline-none font-mono text-lg bg-white" /><span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-yellow-600 font-bold bg-yellow-100 px-2 py-1 rounded">kWh</span></div></div>
+                  </div>
+                </div>
+                <hr className="border-emerald-100" />
+                <div className="space-y-4">
+                  <h3 className="text-xs font-bold text-emerald-600 uppercase tracking-wider flex items-center gap-2"><Download className="h-4 w-4" /> Step 3: Generate Reports</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <button type="submit" disabled={loading || loadingPdf} className={`py-4 rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-all ${loading ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:from-emerald-700 hover:to-teal-700 hover:shadow-xl hover:scale-[1.02]'}`}>
+                      {loading ? <><RefreshCw className="h-5 w-5 animate-spin" /> Generating...</> : <><Download className="h-5 w-5" /> Download XML</>}
+                    </button>
+                    <button type="button" onClick={onSubmitPdf} disabled={loading || loadingPdf} className={`py-4 rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-all ${loadingPdf ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-gradient-to-r from-teal-600 to-cyan-600 text-white hover:from-teal-700 hover:to-cyan-700 hover:shadow-xl hover:scale-[1.02]'}`}>
+                      {loadingPdf ? <><RefreshCw className="h-5 w-5 animate-spin" /> Generating...</> : <><FileText className="h-5 w-5" /> Download PDF</>}
+                    </button>
+                  </div>
+                </div>
+                {status === 'success' && (
+                  <div className="p-4 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 text-emerald-800 rounded-xl flex items-center gap-3 text-sm shadow-sm">
+                    <div className="bg-white p-2 rounded-full shadow-sm"><CheckCircle2 className="h-5 w-5 text-emerald-600" /></div>
+                    <div><span className="font-bold block">Success!</span><span className="text-emerald-600">Report generated & audit log secured.</span></div>
+                  </div>
+                )}
+              </form>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-    </div>
-  </div>
   );
 };
 
-// --- MAIN APP LOGIC ---
+// ─── NEW PLATFORM COMPONENTS ───────────────────────────────────────
 
+const StatusBadge = ({ status }) => {
+  const map = {
+    live: { label: 'LIVE', cls: 'badge-live-tag' },
+    waitlist: { label: 'EARLY ACCESS', cls: 'badge-early-tag' },
+    soon: { label: 'COMING SOON', cls: 'badge-soon-tag' },
+  };
+  const { label, cls } = map[status] || map.soon;
+  return <span className={`status-badge ${cls}`}>{label}</span>;
+};
+
+const Breadcrumb = ({ items, onViewChange }) => (
+  <div className="breadcrumb-bar">
+    {items.map((item, i) => (
+      <React.Fragment key={i}>
+        {i > 0 && <ChevronRight size={13} style={{ color: '#94a3b8' }} />}
+        {item.view ? (
+          <button className="bc-link" onClick={() => onViewChange(item.view)}>{item.label}</button>
+        ) : (
+          <span className="bc-current">{item.label}</span>
+        )}
+      </React.Fragment>
+    ))}
+  </div>
+);
+
+const WaitlistForm = ({ product }) => {
+  const [form, setForm] = useState({ name: '', email: '', company: '', sector: '' });
+  const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const handleSubmit = async (e) => {
+    e.preventDefault(); setLoading(true);
+    try {
+      await axios.post('https://cbam-full-app.onrender.com/submit-feedback', {
+        name: form.name, email: form.email, company: form.company,
+        message: `WAITLIST: ${product.fullName} | Sector: ${form.sector || 'Not specified'}`, rating: 5,
+      });
+    } catch { }
+    setSubmitted(true); setLoading(false);
+  };
+  if (submitted) return (
+    <div className="waitlist-success">
+      <CheckCircle2 size={28} style={{ color: '#16a34a' }} />
+      <h3>You're on the list!</h3>
+      <p>We'll notify <strong>{form.email}</strong> when {product.name} launches.</p>
+    </div>
+  );
+  return (
+    <form onSubmit={handleSubmit} className="waitlist-form">
+      <h3>Join the Waitlist</h3>
+      <p>Be first to access {product.name} when it launches.</p>
+      <div className="waitlist-grid">
+        <input required placeholder="Your name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+        <input required type="email" placeholder="Work email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
+        <input required placeholder="Company name" value={form.company} onChange={e => setForm({ ...form, company: e.target.value })} />
+        <input placeholder="Your sector (e.g. Steel)" value={form.sector} onChange={e => setForm({ ...form, sector: e.target.value })} />
+      </div>
+      <button type="submit" disabled={loading} className="btn-waitlist">
+        {loading ? <><RefreshCw size={15} style={{ animation: 'spin 1s linear infinite' }} /> Joining...</> : <><Mail size={15} /> Join Waitlist</>}
+      </button>
+    </form>
+  );
+};
+
+const ProductCard = ({ product, onViewChange }) => {
+  const Icon = product.icon;
+  return (
+    <div className="mini-product-card" onClick={() => onViewChange(`product-${product.id}`)}>
+      <div className="mini-card-top">
+        <div className="mini-icon" style={{ background: product.accentColor + '18' }}>
+          <Icon size={20} style={{ color: product.accentColor }} />
+        </div>
+        <StatusBadge status={product.status} />
+      </div>
+      <h3 className="mini-card-name">{product.name}</h3>
+      <p className="mini-card-sub">{product.subtitle}</p>
+      <div className="mini-card-deadline">
+        <Clock size={11} style={{ color: product.accentColor, flexShrink: 0 }} />
+        <span style={{ color: product.accentColor, fontSize: 11, fontWeight: 600 }}>{product.deadline}</span>
+      </div>
+      <div className="mini-card-footer">
+        <span className="mini-card-price">{product.price}</span>
+        <span style={{ color: product.accentColor, fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 3 }}>
+          {product.status === 'live' ? 'Launch' : 'Learn More'} <ArrowRight size={11} />
+        </span>
+      </div>
+    </div>
+  );
+};
+
+const ProductPage = ({ productId, onViewChange }) => {
+  const product = PRODUCTS[productId];
+  if (!product) return <div className="p-12 text-center text-slate-500">Product not found.</div>;
+  const Icon = product.icon;
+  return (
+    <div className="product-detail-page">
+      <Breadcrumb items={[{ label: 'BLARAA Systems', view: 'platform' }, { label: 'Products', view: 'products' }, { label: product.name }]} onViewChange={onViewChange} />
+      <div className="product-hero-section" style={{ background: product.bgColor }}>
+        <div className="product-hero-inner">
+          <div className="product-hero-left">
+            <StatusBadge status={product.status} />
+            <div className="product-big-icon" style={{ background: product.accentColor + '20' }}>
+              <Icon size={34} style={{ color: product.accentColor }} />
+            </div>
+            <h1 className="product-page-title">{product.fullName}</h1>
+            <p className="product-page-tagline">{product.tagline}</p>
+            <p className="product-page-desc">{product.description}</p>
+            <div className="product-meta-list">
+              <div className="pm-item"><span className="pm-label">Regulation</span><span className="pm-val">{product.regulation}</span></div>
+              <div className="pm-item"><Clock size={13} style={{ color: product.accentColor, flexShrink: 0 }} /><span className="pm-val" style={{ color: product.accentColor, fontWeight: 700 }}>{product.deadline}</span></div>
+              <div className="pm-item"><span className="pm-label">Pricing</span><span className="pm-val" style={{ fontFamily: 'monospace' }}>{product.price}</span></div>
+            </div>
+            {product.status === 'live' && (
+              <button className="btn-primary" style={{ marginTop: 28 }} onClick={() => onViewChange(product.id === 'cbam' ? 'app' : product.id)}>
+                Launch {product.name} <ArrowRight size={16} />
+              </button>
+            )}
+          </div>
+          <div className="product-hero-right">
+            <div className="product-features-card">
+              <h3 className="pcard-label">What's Included</h3>
+              <ul className="pcard-features">
+                {product.features.map((f, i) => (
+                  <li key={i}><CheckCircle2 size={15} style={{ color: product.accentColor, flexShrink: 0 }} /><span>{f}</span></li>
+                ))}
+              </ul>
+            </div>
+            <div className="product-sectors-card">
+              <h3 className="pcard-label">Covered Sectors</h3>
+              <div className="sector-tags">
+                {product.sectors.map((s, i) => (
+                  <span key={i} className="sector-tag-chip" style={{ background: product.accentColor + '14', color: product.accentColor }}>{s}</span>
+                ))}
+              </div>
+            </div>
+            {product.status !== 'live' && <WaitlistForm product={product} />}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const AllProductsPage = ({ onViewChange }) => {
+  const [filter, setFilter] = useState('all');
+  useReveal();
+  const filtered = filter === 'all' ? ALL_PRODUCTS : ALL_PRODUCTS.filter(p => p.status === filter);
+  return (
+    <div className="all-products-page">
+      <div className="all-products-header">
+        <span className="section-chip"><FileCheck size={11} /> All Products</span>
+        <h1 className="section-title" style={{ textAlign: 'center' }}>India's Complete Compliance Suite</h1>
+        <p className="section-sub" style={{ textAlign: 'center', margin: '10px auto 0' }}>11 tools covering every major energy and carbon regulation in India and the EU.</p>
+        <div className="filter-tabs">
+          {[['all', 'All'], ['live', 'Live Now'], ['waitlist', 'Early Access'], ['soon', 'Coming Soon']].map(([val, label]) => (
+            <button key={val} onClick={() => setFilter(val)} className={`filter-tab ${filter === val ? 'active' : ''}`}>{label}</button>
+          ))}
+        </div>
+      </div>
+      <div className="all-products-grid">
+        {filtered.map(p => <ProductCard key={p.id} product={p} onViewChange={onViewChange} />)}
+      </div>
+    </div>
+  );
+};
+
+const SolutionPage = ({ sectorId, onViewChange }) => {
+  const sector = SECTORS.find(s => s.id === sectorId);
+  if (!sector) return <div className="p-12 text-center text-slate-500">Sector not found.</div>;
+  const Icon = sector.icon;
+  const sectorProducts = sector.products.map(id => PRODUCTS[id]).filter(Boolean);
+  return (
+    <div className="solution-page">
+      <Breadcrumb items={[{ label: 'BLARAA Systems', view: 'platform' }, { label: 'Solutions', view: 'solutions' }, { label: sector.label }]} onViewChange={onViewChange} />
+      <div className="solution-hero-band" style={{ background: sector.bgColor }}>
+        <div className="solution-hero-inner">
+          <div className="sol-icon-wrap" style={{ background: sector.accentColor + '22' }}>
+            <Icon size={26} style={{ color: sector.accentColor }} />
+          </div>
+          <div className="urgency-pill" style={{ color: sector.urgencyColor, background: sector.urgencyColor + '14', borderColor: sector.urgencyColor + '30' }}>
+            <AlertTriangle size={12} /> {sector.urgency}
+          </div>
+          <h1 className="solution-page-title">Solutions for {sector.label}</h1>
+          <p className="solution-page-desc">{sector.description}</p>
+        </div>
+      </div>
+      <div className="solution-products-section">
+        <h2 className="sol-products-label">{sectorProducts.length} tool{sectorProducts.length !== 1 ? 's' : ''} recommended for your sector</h2>
+        <div className="sol-product-grid">
+          {sectorProducts.map(product => {
+            const PIcon = product.icon;
+            return (
+              <div key={product.id} className="sol-product-card" onClick={() => onViewChange(`product-${product.id}`)}>
+                <div className="spc-top">
+                  <div className="spc-icon-box" style={{ background: product.accentColor + '16' }}>
+                    <PIcon size={22} style={{ color: product.accentColor }} />
+                  </div>
+                  <StatusBadge status={product.status} />
+                </div>
+                <h3 className="spc-title">{product.fullName}</h3>
+                <p className="spc-tagline">{product.tagline}</p>
+                <div className="spc-deadline-row">
+                  <Clock size={12} style={{ color: product.accentColor }} />
+                  <span style={{ color: product.accentColor, fontSize: 12, fontWeight: 600 }}>{product.deadline}</span>
+                </div>
+                <ul className="spc-feature-list">
+                  {product.features.slice(0, 3).map((f, i) => (
+                    <li key={i}><CheckCircle2 size={13} style={{ color: product.accentColor, flexShrink: 0 }} /><span>{f}</span></li>
+                  ))}
+                </ul>
+                <div className="spc-footer-row">
+                  <span className="spc-price-tag">{product.price}</span>
+                  <button className="spc-action-btn" style={{ background: product.accentColor }}>
+                    {product.status === 'live' ? 'Launch Now' : 'Join Waitlist'} <ArrowRight size={12} />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const SectorGrid = ({ onViewChange }) => (
+  <section className="sector-section">
+    <div className="max-w-6xl mx-auto px-6">
+      <div className="text-center mb-12 reveal">
+        <span className="section-chip"><Users size={11} /> Find Your Solution</span>
+        <h2 className="section-title" style={{ textAlign: 'center' }}>Who are you?</h2>
+        <p className="section-sub" style={{ textAlign: 'center', margin: '10px auto 0', maxWidth: 500 }}>
+          Select your sector and we'll show you exactly which regulations apply and what you need.
+        </p>
+      </div>
+      <div className="sector-grid">
+        {SECTORS.map((sector, idx) => {
+          const Icon = sector.icon;
+          return (
+            <div key={sector.id} className={`sector-card reveal reveal-delay-${(idx % 4) + 1}`}
+              style={{ '--sector-accent': sector.accentColor, '--sector-bg': sector.bgColor }}
+              onClick={() => onViewChange(`solution-${sector.id}`)}>
+              <div className="sc-icon-box" style={{ background: sector.bgColor }}>
+                <Icon size={20} style={{ color: sector.accentColor }} />
+              </div>
+              <div className="sc-urgency-tag" style={{ color: sector.urgencyColor, background: sector.urgencyColor + '12' }}>
+                {sector.urgency}
+              </div>
+              <h3 className="sc-title">{sector.label}</h3>
+              <p className="sc-subtitle">{sector.subtitle}</p>
+              <div className="sc-chips">
+                {sector.products.slice(0, 3).map(id => PRODUCTS[id]).filter(Boolean).map(p => (
+                  <span key={p.id} className="sc-chip" style={{ background: p.accentColor + '14', color: p.accentColor }}>{p.name}</span>
+                ))}
+                {sector.products.length > 3 && <span className="sc-chip" style={{ background: '#f1f5f9', color: '#64748b' }}>+{sector.products.length - 3}</span>}
+              </div>
+              <div className="sc-arrow-wrap"><ArrowRight size={15} style={{ color: sector.accentColor }} /></div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  </section>
+);
+
+const AllSolutionsPage = ({ onViewChange }) => {
+  useReveal();
+  return (
+    <div style={{ minHeight: '100vh', background: '#f8fafc', paddingBottom: 80 }}>
+      <div className="solutions-page-hero">
+        <div className="max-w-3xl mx-auto px-6 text-center">
+          <span className="platform-badge" style={{ opacity: 1, animation: 'none' }}><Users size={12} /> Solutions by Sector</span>
+          <h1 className="platform-headline" style={{ fontSize: 'clamp(2rem,4vw,3rem)', marginTop: 20 }}>Find your compliance solution</h1>
+          <p className="platform-sub" style={{ marginBottom: 0 }}>Select your sector below to see which regulations apply to you and which tools you need.</p>
+        </div>
+      </div>
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '60px 24px 0' }}>
+        <div className="sector-grid">
+          {SECTORS.map((sector, idx) => {
+            const Icon = sector.icon;
+            return (
+              <div key={sector.id} className={`sector-card reveal reveal-delay-${(idx % 4) + 1}`}
+                style={{ '--sector-accent': sector.accentColor, '--sector-bg': sector.bgColor }}
+                onClick={() => onViewChange(`solution-${sector.id}`)}>
+                <div className="sc-icon-box" style={{ background: sector.bgColor }}>
+                  <Icon size={20} style={{ color: sector.accentColor }} />
+                </div>
+                <div className="sc-urgency-tag" style={{ color: sector.urgencyColor, background: sector.urgencyColor + '12' }}>{sector.urgency}</div>
+                <h3 className="sc-title">{sector.label}</h3>
+                <p className="sc-subtitle">{sector.subtitle}</p>
+                <div className="sc-chips">
+                  {sector.products.slice(0, 3).map(id => PRODUCTS[id]).filter(Boolean).map(p => (
+                    <span key={p.id} className="sc-chip" style={{ background: p.accentColor + '14', color: p.accentColor }}>{p.name}</span>
+                  ))}
+                  {sector.products.length > 3 && <span className="sc-chip" style={{ background: '#f1f5f9', color: '#64748b' }}>+{sector.products.length - 3}</span>}
+                </div>
+                <div className="sc-arrow-wrap"><ArrowRight size={15} style={{ color: sector.accentColor }} /></div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── RENEW TRACK DASHBOARD ─────────────────────────────────────────
+const RenewTrackDashboard = ({ onViewChange }) => {
+  const [step, setStep] = useState(1);
+  const [form, setForm] = useState({
+    entityName: '', consumerType: '', sector: '',
+    state: '', financialYear: '2025-26',
+    totalMWh: '', windMWh: '', hydroMWh: '', dreMWh: '', otherREMWh: '',
+  });
+  const [result, setResult] = useState(null);
+
+  const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
+  const t = RCO_TARGETS[form.financialYear];
+  const isHillyNE = HILLY_NE_STATES.includes(form.state);
+  const totalRE = (parseFloat(form.windMWh) || 0) + (parseFloat(form.hydroMWh) || 0) + (parseFloat(form.dreMWh) || 0) + (parseFloat(form.otherREMWh) || 0);
+  const total = parseFloat(form.totalMWh) || 0;
+  const livePct = total > 0 ? (totalRE / total * 100) : 0;
+
+  const calculate = (e) => {
+    e.preventDefault();
+    const tgt = RCO_TARGETS[form.financialYear];
+    const bRate = RCO_BUYOUT[form.financialYear];
+    const wind = parseFloat(form.windMWh) || 0;
+    const hydro = parseFloat(form.hydroMWh) || 0;
+    const dre = parseFloat(form.dreMWh) || 0;
+    const otherRE = parseFloat(form.otherREMWh) || 0;
+    const curRE = wind + hydro + dre + otherRE;
+    const dreTarget = isHillyNE ? tgt.dre / 2 : tgt.dre;
+    const ovReq = tgt.overall / 100 * total;
+    const windReq = tgt.wind / 100 * total;
+    const hydroReq = tgt.hydro / 100 * total;
+    const dreReq = dreTarget / 100 * total;
+    const ovShort = Math.max(0, ovReq - curRE);
+    const windShort = Math.max(0, windReq - wind);
+    const hydroShort = Math.max(0, hydroReq - hydro);
+    const dreShort = Math.max(0, dreReq - dre);
+    setResult({
+      total, curRE, tgt, isHillyNE, dreTarget,
+      ovReq, windReq, hydroReq, dreReq,
+      ovShort, windShort, hydroShort, dreShort,
+      isCompliant: ovShort === 0 && windShort === 0 && hydroShort === 0 && dreShort === 0,
+      curPct: (curRE / total * 100).toFixed(2),
+      buyoutCost: ovShort * bRate,
+      bRate, recsNeeded: Math.ceil(ovShort),
+      otherHave: otherRE,
+    });
+    setStep(3);
+  };
+
+  const inputStyle = { width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 14, fontFamily: 'monospace', outline: 'none', boxSizing: 'border-box', background: '#fff' };
+  const labelStyle = { display: 'block', fontSize: 12, fontWeight: 600, color: '#374151', marginBottom: 5 };
+  const cardStyle = { background: '#fff', border: '1px solid #fed7aa', borderRadius: 16, padding: 24 };
+
+  // ── STEP 1 ──────────────────────────────────────────────────────────
+  if (step === 1) return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg,#fff7ed 0%,#fff 100%)' }}>
+      <div className="max-w-2xl mx-auto px-4 py-12">
+        <Breadcrumb items={[{ label: 'BLARAA Systems', view: 'platform' }, { label: 'Products', view: 'products' }, { label: 'RenewTrack RCO' }]} onViewChange={onViewChange} />
+        <div style={{ background: '#fff7ed', border: '1px solid #fbbf24', borderRadius: 12, padding: '14px 18px', marginBottom: 24, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+          <AlertTriangle size={16} style={{ color: '#d97706', flexShrink: 0, marginTop: 2 }} />
+          <div>
+            <div style={{ fontWeight: 700, color: '#92400e', fontSize: 13 }}>RCO Compliance Deadline: 31 May 2026</div>
+            <div style={{ color: '#b45309', fontSize: 12, marginTop: 2 }}>FY 2024-25 compliance reports must be filed with BEE by 31st May 2026. Penalties apply under Section 26(3), Energy Conservation Act, 2001.</div>
+          </div>
+        </div>
+        <div style={cardStyle}>
+          <span style={{ background: '#fff7ed', color: '#d97706', border: '1px solid #fbbf24', borderRadius: 20, padding: '4px 14px', fontSize: 11, fontWeight: 700 }}>Step 1 of 3 — Entity Details</span>
+          <h2 style={{ fontSize: 22, fontWeight: 800, color: '#1a2942', marginTop: 14, marginBottom: 4 }}>Who is filing this RCO return?</h2>
+          <p style={{ color: '#64748b', fontSize: 13, marginBottom: 24 }}>Under Energy Conservation (Amendment) Act, 2022 — MoP Notification dated 27 September 2025</p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+            <div>
+              <label style={labelStyle}>Entity Name (Optional)</label>
+              <input value={form.entityName} onChange={e => set('entityName', e.target.value)} placeholder="e.g. Tata Steel Ltd, MSEDCL, NTPC CPP" style={inputStyle} />
+            </div>
+
+            <div>
+              <label style={{ ...labelStyle, marginBottom: 10 }}>Consumer Type *</label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+                {[
+                  { val: 'discom', label: 'DISCOM', sub: 'Distribution Licensee' },
+                  { val: 'open-access', label: 'Open Access', sub: 'Consumer' },
+                  { val: 'cpp', label: 'Captive Power', sub: 'Plant (CPP)' },
+                ].map(opt => (
+                  <button key={opt.val} type="button" onClick={() => set('consumerType', opt.val)}
+                    style={{ padding: '12px 8px', border: `2px solid ${form.consumerType === opt.val ? '#d97706' : '#e2e8f0'}`, borderRadius: 10, background: form.consumerType === opt.val ? '#fff7ed' : '#fff', cursor: 'pointer', textAlign: 'center', transition: 'all 0.15s' }}>
+                    <div style={{ fontWeight: 700, fontSize: 13, color: form.consumerType === opt.val ? '#d97706' : '#374151' }}>{opt.label}</div>
+                    <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{opt.sub}</div>
+                  </button>
+                ))}
+              </div>
+              {form.consumerType === 'discom' && <div style={{ marginTop: 8, fontSize: 11, color: '#64748b', background: '#f8fafc', borderRadius: 8, padding: '6px 10px' }}>DISCOMs: RCO applies to aggregate procurement. Calculated on total electrical energy procured for distribution.</div>}
+              {form.consumerType === 'cpp' && <div style={{ marginTop: 8, fontSize: 11, color: '#64748b', background: '#f8fafc', borderRadius: 8, padding: '6px 10px' }}>CPP: Thermal power plants are excluded. Only captive users procuring via OA or CPP are covered.</div>}
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+              <div>
+                <label style={labelStyle}>Sector *</label>
+                <select value={form.sector} onChange={e => set('sector', e.target.value)} style={{ ...inputStyle, fontFamily: 'inherit' }}>
+                  <option value="">Select sector</option>
+                  {RCO_SECTORS.map(s => <option key={s}>{s}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={labelStyle}>State *</label>
+                <select value={form.state} onChange={e => set('state', e.target.value)} style={{ ...inputStyle, fontFamily: 'inherit' }}>
+                  <option value="">Select state</option>
+                  {INDIAN_STATES.map(s => <option key={s}>{s}</option>)}
+                </select>
+                {isHillyNE && <div style={{ marginTop: 6, fontSize: 11, color: '#0891b2', background: '#ecfeff', borderRadius: 6, padding: '4px 8px' }}>Hilly/NE state: Distributed RE obligation is halved per MoP notification.</div>}
+              </div>
+            </div>
+
+            <div>
+              <label style={{ ...labelStyle, marginBottom: 10 }}>Financial Year *</label>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {Object.keys(RCO_TARGETS).map(fy => (
+                  <button key={fy} type="button" onClick={() => set('financialYear', fy)}
+                    style={{ padding: '7px 14px', border: `2px solid ${form.financialYear === fy ? '#d97706' : '#e2e8f0'}`, borderRadius: 20, background: form.financialYear === fy ? '#fff7ed' : '#fff', cursor: 'pointer', fontSize: 12, fontWeight: form.financialYear === fy ? 700 : 500, color: form.financialYear === fy ? '#d97706' : '#64748b' }}>
+                    FY {fy}
+                  </button>
+                ))}
+              </div>
+              <div style={{ marginTop: 10, padding: '8px 12px', background: '#f8fafc', borderRadius: 8, fontSize: 12, color: '#64748b', display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                <span>Overall target: <strong style={{ color: '#d97706' }}>{t.overall}%</strong></span>
+                <span>Wind min: <strong>{t.wind}%</strong></span>
+                <span>Hydro min: <strong>{t.hydro}%</strong></span>
+                <span>Dist. RE min: <strong>{isHillyNE ? (t.dre / 2).toFixed(2) : t.dre}%</strong>{isHillyNE ? ' (½ rate)' : ''}</span>
+              </div>
+            </div>
+
+            <button onClick={() => { if (!form.consumerType || !form.sector || !form.state) { alert('Please select Consumer Type, Sector and State'); return; } setStep(2); }}
+              style={{ padding: '14px', background: 'linear-gradient(135deg,#d97706,#b45309)', color: '#fff', border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+              Continue to Energy Data <ArrowRight size={16} />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ── STEP 2 ──────────────────────────────────────────────────────────
+  if (step === 2) return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg,#fff7ed 0%,#fff 100%)' }}>
+      <div className="max-w-5xl mx-auto px-4 py-12">
+        <Breadcrumb items={[{ label: 'BLARAA Systems', view: 'platform' }, { label: 'RenewTrack RCO' }]} onViewChange={onViewChange} />
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Live preview panel */}
+          <div>
+            <div style={{ background: '#fff', border: '1px solid #fed7aa', borderRadius: 16, padding: 22, position: 'sticky', top: 90 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                <Zap size={15} style={{ color: '#d97706' }} />
+                <span style={{ fontWeight: 700, fontSize: 12, color: '#92400e', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Live Compliance Preview</span>
+              </div>
+              <div style={{ textAlign: 'center', padding: '12px 0 18px' }}>
+                <div style={{ fontSize: 56, fontWeight: 900, fontFamily: 'monospace', lineHeight: 1, color: total === 0 ? '#cbd5e1' : livePct >= t.overall ? '#16a34a' : '#dc2626' }}>
+                  {total > 0 ? livePct.toFixed(1) : '—'}%
+                </div>
+                <div style={{ fontSize: 12, color: '#64748b', marginTop: 6 }}>Current RE Share</div>
+                <div style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 14px', background: '#fff7ed', border: '1px solid #fbbf24', borderRadius: 20, fontSize: 12, fontWeight: 700, color: '#d97706' }}>
+                  <Clock size={11} /> Target: {t.overall}% (FY {form.financialYear})
+                </div>
+              </div>
+              <div style={{ background: '#f1f5f9', borderRadius: 8, height: 10, overflow: 'hidden', marginBottom: 6 }}>
+                <div style={{ height: '100%', width: `${Math.min(100, total > 0 ? Math.min(livePct / t.overall * 100, 100) : 0)}%`, background: livePct >= t.overall ? '#16a34a' : '#f59e0b', borderRadius: 8, transition: 'width 0.4s ease' }} />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#94a3b8', marginBottom: 18 }}>
+                <span>0%</span><span>Mandatory: {t.overall}%</span>
+              </div>
+              <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 14 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Component Minimums</div>
+                {[
+                  { label: 'Wind', req: t.wind, have: parseFloat(form.windMWh) || 0 },
+                  { label: 'Hydro', req: t.hydro, have: parseFloat(form.hydroMWh) || 0 },
+                  { label: `Dist. RE (≤10MW)${isHillyNE ? ' ½-rate' : ''}`, req: isHillyNE ? t.dre / 2 : t.dre, have: parseFloat(form.dreMWh) || 0 },
+                ].map(row => {
+                  const reqMWh = row.req / 100 * total;
+                  const ok = total > 0 && row.have >= reqMWh;
+                  const missing = Math.max(0, reqMWh - row.have);
+                  return (
+                    <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 0', fontSize: 12, borderBottom: '1px solid #f8fafc' }}>
+                      <div>
+                        <div style={{ fontWeight: 600, color: '#374151' }}>{row.label}</div>
+                        <div style={{ fontSize: 10, color: '#94a3b8' }}>Min {row.req.toFixed(2)}% = {total > 0 ? fmtMWh(reqMWh) : '—'}</div>
+                      </div>
+                      <span style={{ padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: total === 0 ? '#f1f5f9' : ok ? '#dcfce7' : '#fee2e2', color: total === 0 ? '#94a3b8' : ok ? '#16a34a' : '#dc2626' }}>
+                        {total === 0 ? '—' : ok ? 'Met' : `Short ${fmtMWh(missing)}`}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={{ marginTop: 14, fontSize: 10, color: '#94a3b8', lineHeight: 1.6 }}>
+                Source: MoP Gazette Notification, 27 Sep 2025. Buyout rate FY {form.financialYear}: ₹{RCO_BUYOUT[form.financialYear]}/MWh (CERC order).
+              </div>
+            </div>
+          </div>
+
+          {/* Energy data form */}
+          <div>
+            <div style={{ marginBottom: 16 }}>
+              <span style={{ background: '#fff7ed', color: '#d97706', border: '1px solid #fbbf24', borderRadius: 20, padding: '4px 14px', fontSize: 11, fontWeight: 700 }}>Step 2 of 3 — Energy Data</span>
+            </div>
+            <form onSubmit={calculate} style={cardStyle}>
+              <h2 style={{ fontSize: 18, fontWeight: 800, color: '#1a2942', marginBottom: 4 }}>Annual Energy Consumption</h2>
+              <p style={{ color: '#64748b', fontSize: 12, marginBottom: 20 }}>Enter FY {form.financialYear} figures in MWh. (1 MU = 1000 MWh = 1 GWh)</p>
+
+              <div style={{ background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: 12, padding: 16, marginBottom: 16 }}>
+                <label style={{ ...labelStyle, textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: 11 }}>
+                  Total Annual Electricity Consumption (MWh) *
+                </label>
+                <input type="number" step="0.01" min="1" required value={form.totalMWh} onChange={e => set('totalMWh', e.target.value)} placeholder="e.g. 500000" style={{ ...inputStyle, fontSize: 16, fontWeight: 700 }} />
+                <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 5 }}>Net self-consumption excluding auxiliary, as per SLDC-certified meter reading (Operational Guidelines, BEE)</div>
+              </div>
+
+              <div style={{ border: '1.5px solid #fed7aa', borderRadius: 12, overflow: 'hidden', marginBottom: 16 }}>
+                <div style={{ background: '#fff7ed', padding: '10px 16px', fontSize: 11, fontWeight: 700, color: '#92400e', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Renewable Energy — Direct Consumption + RECs Purchased (MWh) *
+                </div>
+                <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {[
+                    { key: 'windMWh', label: 'Wind Energy', hint: `Mandatory minimum: ${t.wind}% of total`, placeholder: 'Wind MWh (direct generation + wind RECs)' },
+                    { key: 'hydroMWh', label: 'Hydro Energy', hint: `Mandatory minimum: ${t.hydro}% of total`, placeholder: 'Hydro MWh (direct + hydro RECs)' },
+                    { key: 'dreMWh', label: 'Distributed RE — ≤10 MW projects', hint: `Mandatory minimum: ${isHillyNE ? (t.dre / 2).toFixed(2) : t.dre}% of total${isHillyNE ? ' (hilly/NE state — 50% concession applied)' : ''}`, placeholder: 'Rooftop solar, small wind, small hydro (MWh)' },
+                    { key: 'otherREMWh', label: 'Other RE — Solar, Biomass, Others', hint: `Covers balance of ${t.other}% other RE requirement`, placeholder: 'Large solar, biomass, biogas, other (MWh)' },
+                  ].map(({ key, label, hint, placeholder }) => (
+                    <div key={key}>
+                      <label style={labelStyle}>{label}</label>
+                      <input type="number" step="0.01" min="0" value={form[key]} onChange={e => set(key, e.target.value)} placeholder={placeholder} style={inputStyle} />
+                      <div style={{ fontSize: 10, color: '#94a3b8', marginTop: 3 }}>{hint}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ background: '#f8fafc', padding: '10px 16px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                  <span style={{ color: '#64748b' }}>Total RE entered:</span>
+                  <strong style={{ color: '#d97706', fontFamily: 'monospace' }}>
+                    {fmtMWh(totalRE)}{total > 0 ? ` (${(totalRE / total * 100).toFixed(2)}%)` : ''}
+                  </strong>
+                </div>
+              </div>
+
+              <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 10, padding: '10px 14px', fontSize: 11, color: '#0369a1', marginBottom: 16 }}>
+                <strong>REC Equivalence:</strong> 1 REC (Renewable Energy Certificate) = 1 MWh of renewable energy. RECs purchased on IEX/PXIL count towards RCO fulfilment. Buyout payment is an alternate compliance mechanism per CERC order.
+              </div>
+
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button type="button" onClick={() => setStep(1)} style={{ flex: 1, padding: '12px', background: '#fff', color: '#64748b', border: '1px solid #e2e8f0', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+                  ← Back
+                </button>
+                <button type="submit" style={{ flex: 2, padding: '12px', background: 'linear-gradient(135deg,#d97706,#b45309)', color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                  <BarChart3 size={16} /> Calculate RCO Compliance
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ── STEP 3 — RESULTS ────────────────────────────────────────────────
+  const r = result;
+  const otherShort = Math.max(0, (r.tgt.other / 100 * r.total) - r.otherHave);
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg,#f8fafc 0%,#fff 100%)' }}>
+      <div className="max-w-3xl mx-auto px-4 py-12">
+        <Breadcrumb items={[{ label: 'BLARAA Systems', view: 'platform' }, { label: 'RenewTrack RCO' }]} onViewChange={onViewChange} />
+
+        {/* Status Banner */}
+        <div style={{ borderRadius: 20, padding: '28px 32px', marginBottom: 24, textAlign: 'center', background: r.isCompliant ? 'linear-gradient(135deg,#f0fdf4,#dcfce7)' : 'linear-gradient(135deg,#fef2f2,#fee2e2)', border: `2px solid ${r.isCompliant ? '#86efac' : '#fca5a5'}` }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, padding: '8px 20px', borderRadius: 40, background: r.isCompliant ? '#16a34a' : '#dc2626', color: '#fff', fontWeight: 800, fontSize: 18, marginBottom: 14, letterSpacing: '0.04em' }}>
+            {r.isCompliant ? <CheckCircle2 size={20} /> : <AlertTriangle size={20} />}
+            {r.isCompliant ? 'COMPLIANT' : 'NON-COMPLIANT'}
+          </div>
+          <div style={{ fontSize: 13, color: '#64748b', marginBottom: 20 }}>
+            FY {form.financialYear} RCO Assessment — {form.entityName || (form.consumerType === 'discom' ? 'DISCOM' : form.consumerType === 'cpp' ? 'CPP' : 'Open Access Consumer')} · {form.sector} · {form.state}
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 32, flexWrap: 'wrap' }}>
+            {[
+              { label: 'Your RE Share', val: `${r.curPct}%`, color: r.isCompliant ? '#16a34a' : '#dc2626' },
+              { label: 'Required', val: `${r.tgt.overall}%`, color: '#d97706' },
+              { label: 'Surplus', val: fmtMWh(Math.max(0, r.curRE - r.ovReq)), color: '#16a34a' },
+              { label: 'Shortfall', val: fmtMWh(r.ovShort), color: '#dc2626' },
+            ].filter((_, i) => !(i === 2 && !r.isCompliant) && !(i === 3 && r.isCompliant)).map((item, i) => (
+              <div key={i} style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: 28, fontWeight: 900, fontFamily: 'monospace', color: item.color }}>{item.val}</div>
+                <div style={{ fontSize: 12, color: '#64748b' }}>{item.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Component Table */}
+        <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 16, overflow: 'hidden', marginBottom: 24 }}>
+          <div style={{ background: '#f8fafc', padding: '12px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#1a2942' }}>Component-wise RCO Compliance</div>
+            <div style={{ fontSize: 11, color: '#94a3b8' }}>MoP Notification, 27 Sep 2025</div>
+          </div>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead>
+                <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                  {['Source', 'Required %', 'Required (MWh)', 'Consumed/RECs (MWh)', 'Status'].map(h => (
+                    <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { label: 'Wind', req: r.tgt.wind, reqMWh: r.windReq, have: parseFloat(form.windMWh) || 0, short: r.windShort, note: '' },
+                  { label: 'Hydro', req: r.tgt.hydro, reqMWh: r.hydroReq, have: parseFloat(form.hydroMWh) || 0, short: r.hydroShort, note: '' },
+                  { label: 'Dist. RE (≤10 MW)', req: r.dreTarget, reqMWh: r.dreReq, have: parseFloat(form.dreMWh) || 0, short: r.dreShort, note: r.isHillyNE ? '½-rate exemption' : '' },
+                  { label: 'Other RE (Solar etc.)', req: r.tgt.other, reqMWh: r.tgt.other / 100 * r.total, have: r.otherHave, short: otherShort, note: '' },
+                  { label: 'Total RCO', req: r.tgt.overall, reqMWh: r.ovReq, have: r.curRE, short: r.ovShort, bold: true },
+                ].map((row, i) => {
+                  const ok = row.short === 0;
+                  return (
+                    <tr key={i} style={{ borderBottom: '1px solid #f1f5f9', background: row.bold ? '#f8fafc' : '#fff' }}>
+                      <td style={{ padding: '10px 16px', fontWeight: row.bold ? 800 : 500, color: '#1a2942' }}>
+                        {row.label}{row.note && <span style={{ fontSize: 10, color: '#0891b2', marginLeft: 6, fontStyle: 'italic' }}>{row.note}</span>}
+                      </td>
+                      <td style={{ padding: '10px 16px', fontFamily: 'monospace', fontWeight: 600, color: '#d97706' }}>{row.req.toFixed(2)}%</td>
+                      <td style={{ padding: '10px 16px', fontFamily: 'monospace', color: '#64748b' }}>{row.reqMWh.toFixed(0)}</td>
+                      <td style={{ padding: '10px 16px', fontFamily: 'monospace', fontWeight: 600, color: ok ? '#16a34a' : '#1a2942' }}>{row.have.toFixed(0)}</td>
+                      <td style={{ padding: '10px 16px' }}>
+                        <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, background: ok ? '#dcfce7' : '#fee2e2', color: ok ? '#15803d' : '#dc2626', whiteSpace: 'nowrap' }}>
+                          {ok ? 'Met' : `Short ${fmtMWh(row.short)}`}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Non-compliant options */}
+        {!r.isCompliant && (
+          <div style={{ background: '#fff', border: '1px solid #fca5a5', borderRadius: 16, padding: 24, marginBottom: 24 }}>
+            <h3 style={{ fontSize: 15, fontWeight: 700, color: '#dc2626', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <AlertTriangle size={15} /> Three Compliance Options (Equal Hierarchy — CERC Order)
+            </h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 16 }}>
+              {[
+                { title: 'Option 1', sub: 'Procure Renewable Power', detail: `Source ${fmtMWh(r.ovShort)} additional RE via PPA, open access, or rooftop solar before year-end.`, color: '#16a34a', bg: '#f0fdf4', border: '#86efac' },
+                { title: 'Option 2', sub: 'Purchase RECs', detail: `Buy ${r.recsNeeded.toLocaleString('en-IN')} MWh-equivalent RECs on IEX or PXIL. Prices vary by REC type.`, color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe', bigVal: `${r.recsNeeded.toLocaleString('en-IN')} RECs` },
+                { title: 'Option 3', sub: 'Pay Buyout Price', detail: `@ ₹${r.bRate}/MWh (CERC determined, FY ${form.financialYear}). 75% credited to State Energy Conservation Fund.`, color: '#d97706', bg: '#fff7ed', border: '#fbbf24', bigVal: fmtINR(r.buyoutCost) },
+              ].map((opt, i) => (
+                <div key={i} style={{ background: opt.bg, border: `1px solid ${opt.border}`, borderRadius: 12, padding: 14 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: opt.color, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{opt.title}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: '#1a2942', margin: '4px 0 6px' }}>{opt.sub}</div>
+                  {opt.bigVal && <div style={{ fontSize: 20, fontWeight: 900, fontFamily: 'monospace', color: opt.color, marginBottom: 4 }}>{opt.bigVal}</div>}
+                  <div style={{ fontSize: 11, color: '#64748b', lineHeight: 1.5 }}>{opt.detail}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ padding: '10px 14px', background: '#fff1f2', border: '1px solid #fecdd3', borderRadius: 10, fontSize: 12, color: '#be123c' }}>
+              <strong>Penalty under Section 26(3), EC Act 2001:</strong> Up to ₹10,00,000 per non-compliance instance + up to 2× price per MTOE of excess consumption. Failure to submit reports: additional penalties under Section 26(4).
+            </div>
+          </div>
+        )}
+
+        {/* Compliant message */}
+        {r.isCompliant && (
+          <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 14, padding: 20, marginBottom: 24 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+              <CheckCircle2 size={16} style={{ color: '#16a34a' }} />
+              <span style={{ fontWeight: 700, color: '#15803d', fontSize: 14 }}>All RCO requirements met for FY {form.financialYear}</span>
+            </div>
+            <p style={{ fontSize: 13, color: '#166534', lineHeight: 1.6 }}>
+              Your surplus is <strong>{fmtMWh(r.curRE - r.ovReq)}</strong> above the {r.tgt.overall}% mandatory target.{' '}
+              Submit your compliance report to BEE before <strong>31 May 2026</strong> (FY 2024-25) or 31 December (subsequent years).
+            </p>
+          </div>
+        )}
+
+        {/* Legal footer */}
+        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: 14, fontSize: 11, color: '#94a3b8', lineHeight: 1.7, marginBottom: 20 }}>
+          <strong style={{ color: '#64748b' }}>Regulatory Reference:</strong> Ministry of Power Gazette Notification dated 27 September 2025 (superseding notification dated 20 October 2023) under Energy Conservation (Amendment) Act, 2022 — Section 14(x). CERC Order on "Determination of Buyout Price as alternate compliance mechanism for RCO". Excluded sources: nuclear power, waste heat recovery (except CCGT), 50% of fossil-based cogeneration. Results are indicative — consult a BEE-certified Energy Manager for official compliance filings at rco.beeindia.gov.in.
+        </div>
+
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button onClick={() => { setStep(1); setResult(null); setForm(p => ({ ...p, totalMWh: '', windMWh: '', hydroMWh: '', dreMWh: '', otherREMWh: '' })); }}
+            style={{ flex: 1, padding: '12px', background: '#fff', color: '#64748b', border: '1px solid #e2e8f0', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+            New Calculation
+          </button>
+          <button onClick={() => window.print()}
+            style={{ flex: 1, padding: '12px', background: '#fff', color: '#374151', border: '1px solid #e2e8f0', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+            <Download size={14} /> Print / Save
+          </button>
+          <button onClick={() => onViewChange('platform')}
+            style={{ flex: 1, padding: '12px', background: 'linear-gradient(135deg,#092f6f,#1db5f2)', color: '#fff', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+            Platform <ArrowRight size={14} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+// ───────────────────────────────────────────────────────────────────────
+
+// ─── PLATFORM HOME ─────────────────────────────────────────────────
+const PlatformHome = ({ onViewChange }) => {
+  useReveal();
+  const REGS = ['EU CBAM — Jan 2026', 'India CCTS — FY2026', 'RCO — May 2026', 'CAFE 3 — 2027', 'ECSBC 2024 — Active'];
+  return (
+    <div>
+      {/* HERO */}
+      <section className="platform-hero">
+        <div className="platform-hero-bg" />
+        <div className="platform-hero-content">
+          <div className="platform-badge">
+            <Star size={12} fill="currentColor" /> India's First Complete Carbon & Energy Compliance Platform
+          </div>
+          <h1 className="platform-headline">
+            Every compliance<br />requirement.<br />One platform.
+          </h1>
+          <p className="platform-sub">
+            CBAM. CCTS. RCO. CAFE. ECSBC.<br />
+            India and EU regulations are active. We handle all of them.
+          </p>
+          <div className="platform-cta-group">
+            <button className="btn-primary" style={{ animation: 'pulse-glow 2.5s ease 1.8s infinite' }} onClick={() => onViewChange('solutions')}>
+              Find My Solution <ArrowRight size={16} />
+            </button>
+            <button className="btn-secondary" onClick={() => onViewChange('products')}>
+              View All Products
+            </button>
+          </div>
+          <div className="hero-trust" style={{ justifyContent: 'center' }}>
+            {['EU CBAM Compliant', 'BEE MRV Ready', 'Indian Carbon Market', 'Audit Trail'].map(t => (
+              <div key={t} className="trust-item"><CheckCircle2 size={14} style={{ color: 'rgba(255,255,255,0.9)' }} /><span>{t}</span></div>
+            ))}
+          </div>
+        </div>
+        <div className="reg-ticker">
+          <div className="reg-ticker-track">
+            {[...REGS, ...REGS].map((r, i) => (
+              <span key={i} className="reg-ticker-item"><Clock size={11} /> {r}</span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* STATS */}
+      <div className="stats-strip">
+        <div className="max-w-5xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8">
+          <StatCounter target={11} suffix="" label="Compliance Products" />
+          <StatCounter target={740} suffix="+" label="CCTS Obligated Factories" />
+          <StatCounter target={1333} suffix="" label="PAT Covered Industries" />
+          <StatCounter target={2026} suffix="" label="Year Everything Converges" />
+        </div>
+      </div>
+
+      {/* SECTOR SELECTOR */}
+      <SectorGrid onViewChange={onViewChange} />
+
+      {/* PRODUCTS PREVIEW */}
+      <section className="py-20" style={{ background: '#f8fafc' }}>
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="reveal flex flex-wrap justify-between items-end gap-4 mb-12">
+            <div>
+              <span className="section-chip"><FileCheck size={11} /> Product Suite</span>
+              <h2 className="section-title">11 tools. One login.</h2>
+              <p className="section-sub">From EU CBAM to India's carbon market — every regulation covered.</p>
+            </div>
+            <button className="btn-outline" onClick={() => onViewChange('products')}>View All Products →</button>
+          </div>
+          <div className="products-preview-grid">
+            {ALL_PRODUCTS.slice(0, 6).map(p => <ProductCard key={p.id} product={p} onViewChange={onViewChange} />)}
+          </div>
+        </div>
+      </section>
+
+      <div id="faq-section"><FAQSection /></div>
+    </div>
+  );
+};
+
+// ─── NAVBAR ────────────────────────────────────────────────────────
+const Navbar = ({ onViewChange, scrolled }) => {
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const close = (view) => { onViewChange(view); setMobileOpen(false); };
+  return (
+    <nav className={`navbar ${scrolled ? 'solid' : 'transparent'}`}>
+      <div className="max-w-7xl mx-auto px-6 sm:px-8 flex justify-between items-center">
+        <button onClick={() => close('platform')} className="flex items-center gap-3" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+          <div style={{ background: 'linear-gradient(135deg,#092f6f,#1db5f2)', padding: '8px', borderRadius: '10px', display: 'flex' }}>
+            <Leaf style={{ width: 20, height: 20, color: '#fff' }} />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+            <span style={{ fontSize: '9px', fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase', color: scrolled ? '#1db5f2' : 'rgba(255,255,255,0.8)', lineHeight: 1 }}>BLARAA SYSTEMS</span>
+            <span style={{ fontSize: '17px', fontWeight: 800, letterSpacing: '-0.02em', color: scrolled ? 'var(--slate-dark)' : '#fff', lineHeight: 1.1, fontFamily: 'var(--font-heading)' }}>ComplianceOS</span>
+          </div>
+        </button>
+        <div className="nav-desktop">
+          {[['solutions', 'Solutions'], ['products', 'Products'], ['feedback', 'Contact']].map(([view, label]) => (
+            <button key={view} className="nav-link" onClick={() => close(view)} style={{ color: scrolled ? 'var(--slate-dark)' : 'rgba(255,255,255,0.92)' }}>{label}</button>
+          ))}
+          <button className="nav-cta" onClick={() => close('app')}>Launch CBAM →</button>
+        </div>
+        <button className="mobile-menu-btn" onClick={() => setMobileOpen(!mobileOpen)} style={{ color: scrolled ? '#1e293b' : '#fff' }}>
+          {mobileOpen ? <X size={22} /> : <Menu size={22} />}
+        </button>
+      </div>
+      {mobileOpen && (
+        <div className="mobile-menu">
+          {[['solutions', 'Solutions'], ['products', 'All Products'], ['app', 'Launch CBAM Tool'], ['feedback', 'Contact']].map(([view, label]) => (
+            <button key={view} className="mobile-menu-item" onClick={() => close(view)}>{label}</button>
+          ))}
+        </div>
+      )}
+    </nav>
+  );
+};
+
+// ─── FOOTER ────────────────────────────────────────────────────────
+const Footer = ({ onViewChange }) => (
+  <footer className="site-footer" style={{ padding: '56px 0 32px' }}>
+    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 32, marginBottom: 40 }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+            <div style={{ background: 'linear-gradient(135deg,#1db5f2,#092f6f)', padding: '7px', borderRadius: '9px', display: 'flex' }}>
+              <Leaf style={{ width: 18, height: 18, color: '#fff' }} />
+            </div>
+            <span className="footer-brand">BLARAA Systems</span>
+          </div>
+          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', maxWidth: 280, lineHeight: 1.65 }}>
+            India's complete energy and carbon compliance platform. CBAM, CCTS, RCO, CAFE, ECSBC — all in one place.
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: 48, flexWrap: 'wrap' }}>
+          <div>
+            <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 14 }}>Solutions</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {SECTORS.slice(0, 5).map(s => <button key={s.id} className="footer-link" onClick={() => onViewChange(`solution-${s.id}`)}>{s.label}</button>)}
+            </div>
+          </div>
+          <div>
+            <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 14 }}>Products</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {ALL_PRODUCTS.filter(p => p.status === 'live' || p.status === 'waitlist').map(p => (
+                <button key={p.id} className="footer-link" onClick={() => onViewChange(`product-${p.id}`)}>{p.name}</button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 14 }}>Contact</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '13.5px' }}>9816979777</span>
+              <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '13.5px' }}>9805900001</span>
+              <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: '13.5px' }}>blaraasystems@gmail.com</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <hr className="footer-divider" />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+        <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px' }}>© {new Date().getFullYear()} BLARAA Systems. India's Carbon & Energy Compliance Platform.</p>
+        <button onClick={() => onViewChange('admin')} title="Authorized Personnel Only"
+          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: 'rgba(255,255,255,0.15)', transition: 'color 0.2s' }}
+          onMouseOver={e => e.currentTarget.style.color = 'rgba(255,255,255,0.5)'}
+          onMouseOut={e => e.currentTarget.style.color = 'rgba(255,255,255,0.15)'}>
+          <Lock style={{ width: 14, height: 14 }} />
+        </button>
+      </div>
+    </div>
+  </footer>
+);
+
+// ─── APP ────────────────────────────────────────────────────────────
 function App() {
-  const [view, setView] = useState('landing');
+  const [view, setView] = useState('platform');
   const [scrolled, setScrolled] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loadingPdf, setLoadingPdf] = useState(false);
   const [status, setStatus] = useState(null);
-  const [formData, setFormData] = useState({
-    company_name: '', company_id: '', city: '',
-    production_tonnes: '', coal_tonnes: '', electricity_kwh: ''
-  });
+  const [formData, setFormData] = useState({ company_name: '', company_id: '', city: '', production_tonnes: '', coal_tonnes: '', electricity_kwh: '' });
 
+  useEffect(() => { window.scrollTo(0, 0); }, [view]);
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60);
     window.addEventListener('scroll', onScroll, { passive: true });
@@ -1029,110 +1655,51 @@ function App() {
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true); setStatus(null);
+    e.preventDefault(); setLoading(true); setStatus(null);
     try {
-      const API_URL = 'https://cbam-full-app.onrender.com/generate-xml'; 
-      const response = await axios.post(API_URL, formData, { responseType: 'blob' });
+      const response = await axios.post('https://cbam-full-app.onrender.com/generate-xml', formData, { responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
+      const link = document.createElement('a'); link.href = url;
       link.setAttribute('download', `${formData.company_name}_CBAM_Report.xml`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
+      document.body.appendChild(link); link.click(); link.remove();
       setStatus('success');
-    } catch (error) {
-      console.error(error); setStatus('error');
-    } finally {
-      setLoading(false);
-    }
+    } catch { setStatus('error'); } finally { setLoading(false); }
   };
 
   const handleSubmitPdf = async () => {
-    if (!formData.company_name || !formData.company_id || !formData.city || 
-        !formData.production_tonnes || !formData.coal_tonnes || !formData.electricity_kwh) {
-      alert('Please fill all fields before generating PDF');
-      return;
-    }
+    if (!formData.company_name || !formData.company_id || !formData.city || !formData.production_tonnes || !formData.coal_tonnes || !formData.electricity_kwh) { alert('Please fill all fields before generating PDF'); return; }
     setLoadingPdf(true); setStatus(null);
     try {
-      const API_URL = 'https://cbam-full-app.onrender.com/generate-pdf'; 
-      const response = await axios.post(API_URL, formData, { responseType: 'blob' });
+      const response = await axios.post('https://cbam-full-app.onrender.com/generate-pdf', formData, { responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
-      const link = document.createElement('a');
-      link.href = url;
+      const link = document.createElement('a'); link.href = url;
       link.setAttribute('download', `${formData.company_name}_CBAM_Report.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
+      document.body.appendChild(link); link.click(); link.remove();
       setStatus('success');
-    } catch (error) {
-      console.error(error); setStatus('error');
-    } finally {
-      setLoadingPdf(false);
-    }
+    } catch { setStatus('error'); } finally { setLoadingPdf(false); }
   };
 
-  // RENDER CONTROLLER
-  let CurrentComponent;
-  if (view === 'landing') CurrentComponent = <LandingPage onLaunch={() => setView('app')} />;
+  const heroViews = ['platform', 'solutions'];
+  const isHero = heroViews.includes(view);
+
+  let CurrentComponent = null;
+  if (view === 'platform') CurrentComponent = <PlatformHome onViewChange={setView} />;
+  else if (view === 'solutions') CurrentComponent = <AllSolutionsPage onViewChange={setView} />;
+  else if (view === 'products') CurrentComponent = <AllProductsPage onViewChange={setView} />;
+  else if (view.startsWith('solution-')) CurrentComponent = <SolutionPage sectorId={view.replace('solution-', '')} onViewChange={setView} />;
+  else if (view.startsWith('product-')) CurrentComponent = <ProductPage productId={view.replace('product-', '')} onViewChange={setView} />;
+  else if (view === 'rco') CurrentComponent = <RenewTrackDashboard onViewChange={setView} />;
   else if (view === 'app') CurrentComponent = <Dashboard formData={formData} setFormData={setFormData} loading={loading} loadingPdf={loadingPdf} status={status} onSubmit={handleSubmit} onSubmitPdf={handleSubmitPdf} onChange={handleChange} />;
   else if (view === 'admin') CurrentComponent = <AdminPanel />;
   else if (view === 'feedback') CurrentComponent = <FeedbackForm />;
 
   return (
-    <div style={{minHeight:'100vh',background:'#fff',fontFamily:'var(--font-body)',display:'flex',flexDirection:'column'}}>
-      <Navbar onViewChange={setView} scrolled={scrolled || view !== 'landing'} />
-      <main style={{flexGrow:1, paddingTop: view === 'landing' ? 0 : 72}}>
+    <div style={{ minHeight: '100vh', background: '#fff', fontFamily: 'var(--font-body)', display: 'flex', flexDirection: 'column' }}>
+      <Navbar onViewChange={setView} scrolled={scrolled || !isHero} />
+      <main style={{ flexGrow: 1, paddingTop: isHero ? 0 : 72 }}>
         {CurrentComponent}
       </main>
-      <footer className="site-footer" style={{padding:'56px 0 32px'}}>
-        <div style={{maxWidth:1200,margin:'0 auto',padding:'0 24px'}}>
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexWrap:'wrap',gap:32,marginBottom:40}}>
-            <div>
-              <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:12}}>
-                <div style={{background:'linear-gradient(135deg,#1db5f2,#092f6f)',padding:'7px',borderRadius:'9px',display:'flex'}}>
-                  <Leaf style={{width:18,height:18,color:'#fff'}} />
-                </div>
-                <span className="footer-brand">CarbonFile</span>
-              </div>
-              <p style={{color:'rgba(255,255,255,0.5)',fontSize:'13px',maxWidth:280,lineHeight:1.65}}>
-                Professional EU CBAM compliance solutions for Indian exporters. Accurate, auditable, EU-schema ready.
-              </p>
-            </div>
-            <div style={{display:'flex',gap:56,flexWrap:'wrap'}}>
-              <div>
-                <div style={{color:'rgba(255,255,255,0.3)',fontSize:'10px',fontWeight:700,letterSpacing:'0.1em',textTransform:'uppercase',marginBottom:14}}>Product</div>
-                <div style={{display:'flex',flexDirection:'column',gap:10}}>
-                  <button className="footer-link" onClick={()=>setView('app')}>CBAM Report Generator</button>
-                  <button className="footer-link" onClick={()=>setView('landing')}>How It Works</button>
-                  <button className="footer-link" onClick={()=>setView('feedback')}>Submit Feedback</button>
-                </div>
-              </div>
-              <div>
-                <div style={{color:'rgba(255,255,255,0.3)',fontSize:'10px',fontWeight:700,letterSpacing:'0.1em',textTransform:'uppercase',marginBottom:14}}>Contact</div>
-                <div style={{display:'flex',flexDirection:'column',gap:10}}>
-                  <span style={{color:'rgba(255,255,255,0.55)',fontSize:'13.5px'}}>9816979777</span>
-                  <span style={{color:'rgba(255,255,255,0.55)',fontSize:'13.5px'}}>9805900001</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <hr className="footer-divider" />
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:12}}>
-            <p style={{color:'rgba(255,255,255,0.3)',fontSize:'12px'}}>
-              © {new Date().getFullYear()} BLARAA Systems. CarbonFile • CBAM Compliance Solutions • India
-            </p>
-            <button onClick={()=>setView('admin')} title="Authorized Personnel Only"
-              style={{background:'none',border:'none',cursor:'pointer',padding:4,color:'rgba(255,255,255,0.15)',transition:'color 0.2s'}}
-              onMouseOver={e=>e.currentTarget.style.color='rgba(255,255,255,0.5)'}
-              onMouseOut={e=>e.currentTarget.style.color='rgba(255,255,255,0.15)'}>
-              <Lock style={{width:14,height:14}} />
-            </button>
-          </div>
-        </div>
-      </footer>
+      <Footer onViewChange={setView} />
     </div>
   );
 }
