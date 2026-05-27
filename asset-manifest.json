@@ -1,15 +1,15 @@
 {
   "files": {
     "main.css": "/BLARAA-SYSTEMS/static/css/main.e62da1c9.css",
-    "main.js": "/BLARAA-SYSTEMS/static/js/main.e8f1ee68.js",
+    "main.js": "/BLARAA-SYSTEMS/static/js/main.886b5695.js",
     "static/js/453.625f5b7f.chunk.js": "/BLARAA-SYSTEMS/static/js/453.625f5b7f.chunk.js",
     "index.html": "/BLARAA-SYSTEMS/index.html",
     "main.e62da1c9.css.map": "/BLARAA-SYSTEMS/static/css/main.e62da1c9.css.map",
-    "main.e8f1ee68.js.map": "/BLARAA-SYSTEMS/static/js/main.e8f1ee68.js.map",
+    "main.886b5695.js.map": "/BLARAA-SYSTEMS/static/js/main.886b5695.js.map",
     "453.625f5b7f.chunk.js.map": "/BLARAA-SYSTEMS/static/js/453.625f5b7f.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.e62da1c9.css",
-    "static/js/main.e8f1ee68.js"
+    "static/js/main.886b5695.js"
   ]
 }
