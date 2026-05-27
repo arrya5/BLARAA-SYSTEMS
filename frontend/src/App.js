@@ -42,7 +42,7 @@ const PRODUCTS = {
     name: 'ComplianceCore',
     fullName: 'ComplianceCore CCTS',
     subtitle: 'Carbon Credit Trading Scheme MRV',
-    status: 'waitlist',
+    status: 'live',
     icon: BarChart3,
     accentColor: '#2563eb',
     bgColor: '#eff6ff',
@@ -314,6 +314,26 @@ const fmtINR = (n) => {
   if (n >= 1e5) return `₹${(n / 1e5).toFixed(2)} L`;
   return `₹${Math.round(n).toLocaleString('en-IN')}`;
 };
+// ─────────────────────────────────────────────────────────────────────
+
+// ─── CCTS GOVERNMENT DATA (GHG EI Target Rules 2025) ─────────────────
+// Phase 1: Oct 8, 2025 (Cement, Aluminium, Chlor Alkali, Pulp & Paper — 282 entities)
+// Phase 2: Jan 13–16, 2026 (Iron & Steel, Fertiliser, Petroleum Refinery, Petrochemicals, Textile — 460+ entities)
+// Baselines are FY 2023-24 plant-specific; sector averages shown here are for reference only.
+const CCTS_SECTORS = [
+  { id: 'cement',      label: 'Cement',              unit: 'tonne cement',         phase: 1, threshold: '30,000 TPA clinker (grinding unit: 10,000 TOE/year)',        subsectors: ['OPC (Ordinary Portland Cement)', 'PPC (Portland Pozzolana Cement)', 'Composite Cement', 'White Cement'],  refBaseline: 0.62, refTarget25: 0.60, refTarget26: 0.58 },
+  { id: 'aluminium',   label: 'Aluminium',            unit: 'tonne Al',             phase: 1, threshold: '10,000 TPA or 7,500 TOE/year',                               subsectors: ['Primary Smelter', 'Alumina Refinery', 'Secondary Aluminium'],                                            refBaseline: 13.50, refTarget25: 13.00, refTarget26: 12.60 },
+  { id: 'chlor_alkali',label: 'Chlor Alkali',         unit: 'tonne caustic soda',   phase: 1, threshold: '12,000 TOE/year',                                            subsectors: ['Membrane Cell', 'Diaphragm Cell'],                                                                     refBaseline: 1.25, refTarget25: 1.17, refTarget26: 1.09 },
+  { id: 'pulp_paper',  label: 'Pulp & Paper',         unit: 'tonne paper',          phase: 1, threshold: '30,000 TPA paper or 7,500 TOE/year',                         subsectors: ['Integrated (Wood-based)', 'Recycled Fibre (RCF)', 'Agro-based', 'Specialty Paper'],               refBaseline: 1.15, refTarget25: 1.07, refTarget26: 0.99 },
+  { id: 'iron_steel',  label: 'Iron & Steel',         unit: 'tonne crude steel',    phase: 2, threshold: '30,000 TPA crude steel or 20,000 TOE/year',                  subsectors: ['BF-BOF (Integrated)', 'DRI / Sponge Iron', 'EAF / EIF (Electric Arc)', 'Ferro Alloys'],           refBaseline: 2.50, refTarget25: 2.40, refTarget26: 2.30 },
+  { id: 'fertiliser',  label: 'Fertiliser',           unit: 'tonne urea',           phase: 2, threshold: 'Facility-named in gazette (21 notified entities)',            subsectors: ['Gas-based Urea', 'Naphtha-based Urea', 'Ammonia'],                                                   refBaseline: 2.50, refTarget25: 2.45, refTarget26: 2.40 },
+  { id: 'refinery',    label: 'Petroleum Refinery',   unit: 'MBBLS crude',          phase: 2, threshold: '90,000 TOE/year',                                            subsectors: ['Petroleum Refinery'],                                                                                  refBaseline: 4.90, refTarget25: 4.75, refTarget26: 4.62 },
+  { id: 'petrochem',   label: 'Petrochemicals',       unit: 'tonne product',        phase: 2, threshold: '1,00,000 TOE/year',                                          subsectors: ['Petrochemicals'],                                                                                      refBaseline: 1.10, refTarget25: 1.06, refTarget26: 1.02 },
+  { id: 'textile',     label: 'Textile',              unit: 'tonne textile product', phase: 2, threshold: '3,000 TOE/year (spinning, processing, composite, fibre)',    subsectors: ['Composite Fibre', 'Processing', 'Spinning'],                                                          refBaseline: 5.00, refTarget25: 4.90, refTarget26: 4.78 },
+];
+
+// Analyst estimate — CERC has not published an official price band yet (as of May 2026)
+const CCTS_CCC_PRICE = { low: 600, mid: 800, high: 1200 };
 // ─────────────────────────────────────────────────────────────────────
 
 const SECTORS = [
@@ -1065,6 +1085,403 @@ const AllSolutionsPage = ({ onViewChange }) => {
   );
 };
 
+// ─── COMPLIANCE CORE (CCTS MRV) DASHBOARD ──────────────────────────
+const ComplianceCoreDashboard = ({ onViewChange }) => {
+  const [step, setStep] = useState(1);
+  const [form, setForm] = useState({
+    entityName: '', sector: '', subsector: '', financialYear: '2025-26',
+    production: '', scope1: '', scope2: '', baselineGEI: '', targetGEI: '',
+  });
+  const [result, setResult] = useState(null);
+
+  const setF = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const sectorData = form.sector ? CCTS_SECTORS.find(s => s.id === form.sector) : null;
+  const scope1Val = parseFloat(form.scope1) || 0;
+  const scope2Val = parseFloat(form.scope2) || 0;
+  const prodVal   = parseFloat(form.production) || 0;
+  const tgtGEI    = parseFloat(form.targetGEI) || 0;
+  const baseGEI   = parseFloat(form.baselineGEI) || 0;
+  const liveGEI   = prodVal > 0 ? (scope1Val + scope2Val) / prodVal : 0;
+  const liveDelta = tgtGEI > 0 && prodVal > 0 ? (tgtGEI - liveGEI) * prodVal : 0;
+  const liveOk    = liveGEI > 0 && tgtGEI > 0 && liveGEI <= tgtGEI;
+
+  const calculate = (e) => {
+    e.preventDefault();
+    const prod     = parseFloat(form.production) || 0;
+    const s1       = parseFloat(form.scope1) || 0;
+    const s2       = parseFloat(form.scope2) || 0;
+    const tgt      = parseFloat(form.targetGEI) || 0;
+    const base     = parseFloat(form.baselineGEI) || 0;
+    const total    = s1 + s2;
+    const achieved = prod > 0 ? total / prod : 0;
+    const cccDelta = (tgt - achieved) * prod;
+    const earned   = Math.max(0, cccDelta);
+    const deficit  = Math.max(0, -cccDelta);
+    setResult({
+      prod, s1, s2, total, achieved, tgt, base,
+      earned, deficit,
+      isCompliant: achieved <= tgt && achieved > 0,
+      geiReductionPct:    base > 0 ? (base - achieved) / base * 100 : 0,
+      targetReductionPct: base > 0 ? (base - tgt) / base * 100 : 0,
+      surplusLow:  earned * CCTS_CCC_PRICE.low,
+      surplusMid:  earned * CCTS_CCC_PRICE.mid,
+      surplusHigh: earned * CCTS_CCC_PRICE.high,
+      defCostLow:  deficit * CCTS_CCC_PRICE.low,
+      defCostMid:  deficit * CCTS_CCC_PRICE.mid,
+      defCostHigh: deficit * CCTS_CCC_PRICE.high,
+      penaltyMid:  deficit * CCTS_CCC_PRICE.mid * 2,
+      penaltyHigh: deficit * CCTS_CCC_PRICE.high * 2,
+      sector: sectorData,
+      fy: form.financialYear,
+    });
+    setStep(3);
+  };
+
+  const StepBar = () => (
+    <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+      {[1, 2, 3].map(n => (
+        <div key={n} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ width: 28, height: 28, borderRadius: '50%', background: step >= n ? '#2563eb' : '#e2e8f0', color: step >= n ? '#fff' : '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700 }}>{n}</div>
+          <span style={{ fontSize: 12, color: step >= n ? '#1e293b' : '#94a3b8', fontWeight: step === n ? 700 : 400 }}>{['Entity Details', 'Emissions & Production', 'Results'][n - 1]}</span>
+          {n < 3 && <ChevronRight size={14} style={{ color: '#cbd5e1', margin: '0 4px' }} />}
+        </div>
+      ))}
+    </div>
+  );
+
+  // ── Step 1 ──────────────────────────────────────────────────────────
+  if (step === 1) return (
+    <div style={{ maxWidth: 760, margin: '40px auto', padding: '0 20px' }}>
+      <button onClick={() => onViewChange('product-ccts')} style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', fontSize: 13, fontWeight: 600, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 6 }}>← Back to ComplianceCore</button>
+      <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 16, padding: 36 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+          <div style={{ background: 'linear-gradient(135deg,#2563eb,#1e40af)', padding: 10, borderRadius: 10, display: 'flex' }}>
+            <BarChart3 style={{ width: 20, height: 20, color: '#fff' }} />
+          </div>
+          <div>
+            <h1 style={{ fontSize: 20, fontWeight: 800, color: '#1e293b', margin: 0 }}>ComplianceCore — CCTS MRV Tool</h1>
+            <p style={{ fontSize: 13, color: '#64748b', margin: 0 }}>GHG Emission Intensity Calculator · Carbon Credit Trading Scheme 2023</p>
+          </div>
+        </div>
+        <StepBar />
+        <h2 style={{ fontSize: 16, fontWeight: 700, color: '#1e293b', marginBottom: 20 }}>Step 1 — Entity & Compliance Year</h2>
+        <form onSubmit={e => { e.preventDefault(); if (!form.sector) return; setStep(2); }}>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Entity / Plant Name (optional)</label>
+            <input value={form.entityName} onChange={e => setF('entityName', e.target.value)} placeholder="e.g. SAIL Bhilai Steel Plant" style={{ width: '100%', padding: '10px 12px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14, outline: 'none', boxSizing: 'border-box' }} />
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Sector <span style={{ color: '#dc2626' }}>*</span></label>
+            <select value={form.sector} onChange={e => { setF('sector', e.target.value); setF('subsector', ''); }} required style={{ width: '100%', padding: '10px 12px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14, outline: 'none', background: '#fff', boxSizing: 'border-box' }}>
+              <option value="">Select CCTS obligated sector</option>
+              {CCTS_SECTORS.map(s => <option key={s.id} value={s.id}>{s.label} — Phase {s.phase}</option>)}
+            </select>
+          </div>
+          {sectorData && sectorData.subsectors.length > 1 && (
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Sub-sector</label>
+              <select value={form.subsector} onChange={e => setF('subsector', e.target.value)} style={{ width: '100%', padding: '10px 12px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14, outline: 'none', background: '#fff', boxSizing: 'border-box' }}>
+                <option value="">Select sub-sector</option>
+                {sectorData.subsectors.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+          )}
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Compliance Year <span style={{ color: '#dc2626' }}>*</span></label>
+            <div style={{ display: 'flex', gap: 10 }}>
+              {['2025-26', '2026-27'].map(fy => (
+                <button type="button" key={fy} onClick={() => setF('financialYear', fy)} style={{ flex: 1, padding: '10px', border: `2px solid ${form.financialYear === fy ? '#2563eb' : '#d1d5db'}`, borderRadius: 8, background: form.financialYear === fy ? '#eff6ff' : '#fff', color: form.financialYear === fy ? '#2563eb' : '#64748b', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
+                  FY {fy}
+                </button>
+              ))}
+            </div>
+            <p style={{ fontSize: 12, color: form.financialYear === '2025-26' ? '#2563eb' : '#7c3aed', marginTop: 6 }}>
+              {form.financialYear === '2025-26' ? '1st CCTS compliance year — Form A (verified GHG data) due July 31, 2026' : '2nd CCTS compliance year — Form A due July 31, 2027'}
+            </p>
+          </div>
+          {sectorData && (
+            <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: 16, marginBottom: 20 }}>
+              <p style={{ fontSize: 12, fontWeight: 700, color: '#1e40af', marginBottom: 10 }}>Sector-Average Reference GEI (for guidance only)</p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                {[
+                  ['Sector Baseline', sectorData.refBaseline.toFixed(2), 'FY 2023-24 avg'],
+                  [`FY ${form.financialYear} Target`, (form.financialYear === '2025-26' ? sectorData.refTarget25 : sectorData.refTarget26).toFixed(2), 'Sector avg. target'],
+                  ['Required Reduction', (((sectorData.refBaseline - (form.financialYear === '2025-26' ? sectorData.refTarget25 : sectorData.refTarget26)) / sectorData.refBaseline) * 100).toFixed(1) + '%', 'From baseline'],
+                ].map(([title, val, sub]) => (
+                  <div key={title} style={{ background: '#fff', borderRadius: 8, padding: '10px', textAlign: 'center' }}>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: '#2563eb' }}>{val}</div>
+                    <div style={{ fontSize: 10, color: '#374151', fontWeight: 600, marginTop: 2 }}>{title}</div>
+                    <div style={{ fontSize: 10, color: '#94a3b8' }}>{sub}</div>
+                  </div>
+                ))}
+              </div>
+              <p style={{ fontSize: 11, color: '#64748b', marginTop: 10, marginBottom: 4, fontStyle: 'italic' }}>⚠ These are sector-wide averages. Your plant-specific baseline and target are in your BEE gazette notification — use those in Step 2.</p>
+              <p style={{ fontSize: 11, color: '#374151', marginBottom: 0 }}>Obligation threshold: {sectorData.threshold}</p>
+            </div>
+          )}
+          <button type="submit" disabled={!form.sector} style={{ width: '100%', padding: 14, background: form.sector ? 'linear-gradient(135deg,#2563eb,#1e40af)' : '#e2e8f0', color: form.sector ? '#fff' : '#94a3b8', border: 'none', borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: form.sector ? 'pointer' : 'default' }}>
+            Continue to Emissions Data →
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+
+  // ── Step 2 ──────────────────────────────────────────────────────────
+  if (step === 2) return (
+    <div style={{ maxWidth: 980, margin: '40px auto', padding: '0 20px' }}>
+      <button onClick={() => setStep(1)} style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', fontSize: 13, fontWeight: 600, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 6 }}>← Back</button>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: 20, alignItems: 'start' }}>
+        {/* Live preview panel */}
+        <div style={{ position: 'sticky', top: 90, background: '#1e293b', borderRadius: 16, padding: 28, color: '#fff' }}>
+          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 16 }}>Live GEI Preview</p>
+          {liveGEI > 0 && tgtGEI > 0 ? (
+            <>
+              <div style={{ textAlign: 'center', marginBottom: 20 }}>
+                <div style={{ fontSize: 38, fontWeight: 900, color: liveOk ? '#4ade80' : '#f87171', lineHeight: 1 }}>{liveGEI.toFixed(4)}</div>
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', marginTop: 4 }}>tCO2e / {sectorData?.unit || 'unit'}</div>
+                <div style={{ marginTop: 8, fontSize: 13, color: liveOk ? '#4ade80' : '#f87171', fontWeight: 700 }}>{liveOk ? '✓ Below Target' : '✗ Above Target'}</div>
+              </div>
+              <div style={{ background: 'rgba(255,255,255,0.07)', borderRadius: 10, padding: 14 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 6 }}>
+                  <span style={{ color: 'rgba(255,255,255,0.45)' }}>Your GEI</span>
+                  <span style={{ fontWeight: 700 }}>{liveGEI.toFixed(4)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 10 }}>
+                  <span style={{ color: 'rgba(255,255,255,0.45)' }}>Target GEI</span>
+                  <span style={{ color: '#93c5fd', fontWeight: 700 }}>{tgtGEI.toFixed(4)}</span>
+                </div>
+                <div style={{ background: '#334155', borderRadius: 8, overflow: 'hidden', height: 8, marginBottom: 10 }}>
+                  <div style={{ height: '100%', width: `${Math.min(100, (tgtGEI / liveGEI) * 100)}%`, background: liveOk ? '#4ade80' : '#f87171', transition: 'width 0.3s' }} />
+                </div>
+                {prodVal > 0 && (
+                  <div style={{ fontSize: 12, textAlign: 'center', fontWeight: 700, color: liveDelta >= 0 ? '#4ade80' : '#f87171' }}>
+                    {liveDelta >= 0
+                      ? `+${Math.round(liveDelta).toLocaleString('en-IN')} CCCs surplus`
+                      : `${Math.round(-liveDelta).toLocaleString('en-IN')} CCCs deficit`}
+                  </div>
+                )}
+              </div>
+              {baseGEI > 0 && <div style={{ marginTop: 12, fontSize: 12, color: 'rgba(255,255,255,0.45)' }}>Reduction from baseline: <span style={{ color: '#a78bfa', fontWeight: 700 }}>{((baseGEI - liveGEI) / baseGEI * 100).toFixed(1)}%</span></div>}
+            </>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '28px 0', opacity: 0.4 }}>
+              <BarChart3 style={{ width: 34, height: 34, margin: '0 auto 10px' }} />
+              <p style={{ fontSize: 13 }}>Enter production, emissions,<br />and target GEI to see live preview</p>
+            </div>
+          )}
+        </div>
+        {/* Input form */}
+        <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 16, padding: 28 }}>
+          <StepBar />
+          <h2 style={{ fontSize: 16, fontWeight: 700, color: '#1e293b', marginBottom: 4 }}>Step 2 — Emissions & Production Data</h2>
+          <p style={{ fontSize: 13, color: '#64748b', marginBottom: 20 }}>Sector: <strong>{sectorData?.label}</strong> · FY {form.financialYear}</p>
+          <form onSubmit={calculate}>
+            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: 16, marginBottom: 16 }}>
+              <p style={{ fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 12 }}>ANNUAL PRODUCTION OUTPUT</p>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Production volume <span style={{ color: '#dc2626' }}>*</span></label>
+              <div style={{ display: 'flex' }}>
+                <input type="number" min="0" value={form.production} onChange={e => setF('production', e.target.value)} required placeholder="e.g. 2000000" style={{ flex: 1, padding: '10px 12px', border: '1px solid #d1d5db', borderRadius: '8px 0 0 8px', fontSize: 14, outline: 'none' }} />
+                <span style={{ padding: '10px 12px', background: '#e2e8f0', border: '1px solid #d1d5db', borderLeft: 'none', borderRadius: '0 8px 8px 0', fontSize: 12, color: '#64748b', display: 'flex', alignItems: 'center', whiteSpace: 'nowrap' }}>{sectorData?.unit || 'units'}</span>
+              </div>
+            </div>
+            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: 16, marginBottom: 16 }}>
+              <p style={{ fontSize: 12, fontWeight: 700, color: '#374151', marginBottom: 12 }}>GHG EMISSIONS (FY {form.financialYear})</p>
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 4 }}>Scope 1 Emissions (direct) <span style={{ color: '#dc2626' }}>*</span></label>
+                <p style={{ fontSize: 11, color: '#94a3b8', marginBottom: 6 }}>Fuel combustion + process emissions (CO2; also PFCs for aluminium)</p>
+                <div style={{ display: 'flex' }}>
+                  <input type="number" min="0" value={form.scope1} onChange={e => setF('scope1', e.target.value)} required placeholder="tCO2e" style={{ flex: 1, padding: '10px 12px', border: '1px solid #d1d5db', borderRadius: '8px 0 0 8px', fontSize: 14, outline: 'none' }} />
+                  <span style={{ padding: '10px 12px', background: '#e2e8f0', border: '1px solid #d1d5db', borderLeft: 'none', borderRadius: '0 8px 8px 0', fontSize: 12, color: '#64748b', display: 'flex', alignItems: 'center' }}>tCO2e</span>
+                </div>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 4 }}>Scope 2 Emissions (indirect) <span style={{ color: '#dc2626' }}>*</span></label>
+                <p style={{ fontSize: 11, color: '#94a3b8', marginBottom: 6 }}>Purchased electricity + heat — use CEA grid emission factor for your state</p>
+                <div style={{ display: 'flex' }}>
+                  <input type="number" min="0" value={form.scope2} onChange={e => setF('scope2', e.target.value)} required placeholder="tCO2e" style={{ flex: 1, padding: '10px 12px', border: '1px solid #d1d5db', borderRadius: '8px 0 0 8px', fontSize: 14, outline: 'none' }} />
+                  <span style={{ padding: '10px 12px', background: '#e2e8f0', border: '1px solid #d1d5db', borderLeft: 'none', borderRadius: '0 8px 8px 0', fontSize: 12, color: '#64748b', display: 'flex', alignItems: 'center' }}>tCO2e</span>
+                </div>
+              </div>
+              {scope1Val > 0 && prodVal > 0 && (
+                <div style={{ marginTop: 12, background: '#eff6ff', borderRadius: 8, padding: '10px 14px', fontSize: 12, color: '#1e40af' }}>
+                  Calculated GEI = ({scope1Val.toLocaleString('en-IN')} + {scope2Val.toLocaleString('en-IN')}) ÷ {prodVal.toLocaleString('en-IN')} = <strong>{liveGEI.toFixed(4)} tCO2e/{sectorData?.unit || 'unit'}</strong>
+                </div>
+              )}
+            </div>
+            <div style={{ background: '#fefce8', border: '1px solid #fef08a', borderRadius: 10, padding: 16, marginBottom: 20 }}>
+              <p style={{ fontSize: 12, fontWeight: 700, color: '#92400e', marginBottom: 4 }}>YOUR BEE-NOTIFIED GEI TARGETS</p>
+              <p style={{ fontSize: 11, color: '#78350f', marginBottom: 14 }}>From the official GHG Emission Intensity Target Rules 2025 gazette notification — values are plant-specific and unique to each entity.</p>
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Your Baseline GEI (FY 2023-24) <span style={{ color: '#dc2626' }}>*</span></label>
+                <div style={{ display: 'flex' }}>
+                  <input type="number" step="0.0001" min="0" value={form.baselineGEI} onChange={e => setF('baselineGEI', e.target.value)} required placeholder={sectorData ? sectorData.refBaseline.toFixed(2) : 'e.g. 2.50'} style={{ flex: 1, padding: '10px 12px', border: '1px solid #d1d5db', borderRadius: '8px 0 0 8px', fontSize: 14, outline: 'none' }} />
+                  <span style={{ padding: '10px 12px', background: '#e2e8f0', border: '1px solid #d1d5db', borderLeft: 'none', borderRadius: '0 8px 8px 0', fontSize: 12, color: '#64748b', display: 'flex', alignItems: 'center', whiteSpace: 'nowrap' }}>tCO2e/{sectorData?.unit || 'unit'}</span>
+                </div>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Your Target GEI for FY {form.financialYear} <span style={{ color: '#dc2626' }}>*</span></label>
+                <div style={{ display: 'flex' }}>
+                  <input type="number" step="0.0001" min="0" value={form.targetGEI} onChange={e => setF('targetGEI', e.target.value)} required placeholder={sectorData ? (form.financialYear === '2025-26' ? sectorData.refTarget25 : sectorData.refTarget26).toFixed(2) : 'e.g. 2.40'} style={{ flex: 1, padding: '10px 12px', border: '1px solid #d1d5db', borderRadius: '8px 0 0 8px', fontSize: 14, outline: 'none' }} />
+                  <span style={{ padding: '10px 12px', background: '#e2e8f0', border: '1px solid #d1d5db', borderLeft: 'none', borderRadius: '0 8px 8px 0', fontSize: 12, color: '#64748b', display: 'flex', alignItems: 'center', whiteSpace: 'nowrap' }}>tCO2e/{sectorData?.unit || 'unit'}</span>
+                </div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button type="button" onClick={() => setStep(1)} style={{ flex: 1, padding: 14, background: '#f1f5f9', color: '#475569', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>← Back</button>
+              <button type="submit" style={{ flex: 2, padding: 14, background: 'linear-gradient(135deg,#2563eb,#1e40af)', color: '#fff', border: 'none', borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>Calculate CCC Position →</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+
+  // ── Step 3 — Results ────────────────────────────────────────────────
+  const r = result;
+  if (!r) return null;
+  return (
+    <div style={{ maxWidth: 820, margin: '40px auto', padding: '0 20px' }}>
+      <button onClick={() => setStep(2)} style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', fontSize: 13, fontWeight: 600, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 6 }}>← Back to Data Entry</button>
+
+      {/* Status banner */}
+      <div style={{ background: r.isCompliant ? 'linear-gradient(135deg,#16a34a,#15803d)' : 'linear-gradient(135deg,#dc2626,#b91c1c)', borderRadius: 16, padding: '28px 32px', color: '#fff', marginBottom: 20 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', opacity: 0.7, marginBottom: 6 }}>{r.sector?.label} · FY {r.fy} · CCTS Status</div>
+            <div style={{ fontSize: 30, fontWeight: 900 }}>{r.isCompliant ? '✓ GEI TARGET MET' : '✗ GEI TARGET MISSED'}</div>
+            <div style={{ fontSize: 14, opacity: 0.85, marginTop: 4 }}>Your GEI: <strong>{r.achieved.toFixed(4)}</strong> vs Target: <strong>{r.tgt.toFixed(4)}</strong> tCO2e/{r.sector?.unit || 'unit'}</div>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: 11, opacity: 0.7, marginBottom: 4 }}>{r.isCompliant ? 'CCCs Earned' : 'CCCs Deficit'}</div>
+            <div style={{ fontSize: 34, fontWeight: 900 }}>{Math.round(r.isCompliant ? r.earned : r.deficit).toLocaleString('en-IN')}</div>
+            <div style={{ fontSize: 12, opacity: 0.8 }}>tCO2e</div>
+          </div>
+        </div>
+      </div>
+
+      {/* GEI Summary Table */}
+      <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, padding: 24, marginBottom: 16 }}>
+        <h3 style={{ fontSize: 14, fontWeight: 700, color: '#1e293b', marginBottom: 16 }}>GEI Performance Summary</h3>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+            <thead>
+              <tr style={{ background: '#f8fafc' }}>
+                {['Parameter', 'Value', 'Unit'].map(h => <th key={h} style={{ padding: '10px 14px', textAlign: 'left', color: '#64748b', fontWeight: 600, fontSize: 12, borderBottom: '1px solid #e2e8f0' }}>{h}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                { label: 'Annual Production',        val: r.prod.toLocaleString('en-IN'),         unit: r.sector?.unit || 'units' },
+                { label: 'Scope 1 Emissions',        val: r.s1.toLocaleString('en-IN'),           unit: 'tCO2e' },
+                { label: 'Scope 2 Emissions',        val: r.s2.toLocaleString('en-IN'),           unit: 'tCO2e' },
+                { label: 'Total GHG Emissions',      val: r.total.toLocaleString('en-IN'),        unit: 'tCO2e' },
+                { label: 'Baseline GEI (FY 2023-24)',val: r.base.toFixed(4),                      unit: `tCO2e/${r.sector?.unit || 'unit'}` },
+                { label: `Target GEI (FY ${r.fy})`,  val: r.tgt.toFixed(4),                       unit: `tCO2e/${r.sector?.unit || 'unit'}`, hi: true },
+                { label: 'Your Achieved GEI',        val: r.achieved.toFixed(4),                  unit: `tCO2e/${r.sector?.unit || 'unit'}`, hi: true },
+                { label: 'Reduction from Baseline',  val: `${r.geiReductionPct.toFixed(2)}%`,     unit: `Required: ${r.targetReductionPct.toFixed(2)}%` },
+              ].map((row, i) => (
+                <tr key={i} style={{ borderBottom: '1px solid #f1f5f9', background: row.hi ? (r.isCompliant ? '#f0fdf4' : '#fef2f2') : 'transparent' }}>
+                  <td style={{ padding: '10px 14px', color: '#374151' }}>{row.label}</td>
+                  <td style={{ padding: '10px 14px', fontWeight: row.hi ? 700 : 400, color: row.hi ? (r.isCompliant ? '#16a34a' : '#dc2626') : '#1e293b' }}>{row.val}</td>
+                  <td style={{ padding: '10px 14px', color: '#94a3b8' }}>{row.unit}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Surplus block */}
+      {r.isCompliant && r.earned > 0 && (
+        <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 14, padding: 24, marginBottom: 16 }}>
+          <h3 style={{ fontSize: 14, fontWeight: 700, color: '#16a34a', marginBottom: 14 }}>Carbon Credit Certificates Earned — Estimated Revenue</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 14 }}>
+            {[['At ₹600/tCO2e (low)', r.surplusLow], ['At ₹800/tCO2e (mid-range)', r.surplusMid], ['At ₹1,200/tCO2e (high)', r.surplusHigh]].map(([label, val]) => (
+              <div key={label} style={{ background: '#fff', borderRadius: 10, padding: 14, textAlign: 'center', border: '1px solid #bbf7d0' }}>
+                <div style={{ fontSize: 20, fontWeight: 800, color: '#16a34a' }}>{fmtINR(val)}</div>
+                <div style={{ fontSize: 11, color: '#64748b', marginTop: 4 }}>{label}</div>
+              </div>
+            ))}
+          </div>
+          <p style={{ fontSize: 12, color: '#374151', marginBottom: 6 }}>You earned <strong>{Math.round(r.earned).toLocaleString('en-IN')} CCCs</strong> ({Math.round(r.earned).toLocaleString('en-IN')} tCO2e below target). These can be sold on IEX, PXIL, or HPX after BEE/NSC-ICM issues them following your verified Form A submission.</p>
+          <p style={{ fontSize: 11, color: '#64748b', fontStyle: 'italic' }}>⚠ CERC has not published an official floor/ceiling CCC price band yet. ₹600–₹1,200/tCO2e is an analyst estimate. Actual prices will be set by market forces on the power exchanges.</p>
+        </div>
+      )}
+
+      {/* Deficit block */}
+      {!r.isCompliant && r.deficit > 0 && (
+        <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 14, padding: 24, marginBottom: 16 }}>
+          <h3 style={{ fontSize: 14, fontWeight: 700, color: '#dc2626', marginBottom: 14 }}>CCC Deficit — Action Required Before Trading Window</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, marginBottom: 14 }}>
+            <div style={{ background: '#fff', borderRadius: 10, padding: 14, border: '1px solid #fecaca' }}>
+              <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>CCCs to Purchase</div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: '#dc2626' }}>{Math.ceil(r.deficit).toLocaleString('en-IN')}</div>
+              <div style={{ fontSize: 11, color: '#94a3b8' }}>on IEX / PXIL / HPX</div>
+            </div>
+            <div style={{ background: '#fff', borderRadius: 10, padding: 14, border: '1px solid #fecaca' }}>
+              <div style={{ fontSize: 11, color: '#94a3b8', marginBottom: 4 }}>Estimated Purchase Cost (mid)</div>
+              <div style={{ fontSize: 24, fontWeight: 800, color: '#dc2626' }}>{fmtINR(r.defCostMid)}</div>
+              <div style={{ fontSize: 11, color: '#94a3b8' }}>₹{CCTS_CCC_PRICE.low.toLocaleString()}–₹{CCTS_CCC_PRICE.high.toLocaleString()} range</div>
+            </div>
+          </div>
+          <div style={{ background: '#fff3f3', border: '1px solid #fca5a5', borderRadius: 10, padding: 14, marginBottom: 12 }}>
+            <p style={{ fontSize: 13, fontWeight: 700, color: '#b91c1c', marginBottom: 6 }}>Environmental Compensation Risk (if deficit not corrected by trading window)</p>
+            <p style={{ fontSize: 13, color: '#7f1d1d' }}>Formula: 2 × market price × {Math.ceil(r.deficit).toLocaleString('en-IN')} tCO2e</p>
+            <p style={{ fontSize: 14, fontWeight: 700, color: '#7f1d1d' }}>{fmtINR(r.penaltyMid)} (at ₹800) — up to {fmtINR(r.penaltyHigh)} (at ₹1,200)</p>
+            <p style={{ fontSize: 11, color: '#64748b', marginTop: 8 }}>Administered by CPCB. 90-day payment window after order. Penalty is NOT applicable if deficit CCCs are purchased during the October 2026 trading cycle.</p>
+          </div>
+          <p style={{ fontSize: 12, color: '#374151' }}><strong>Action:</strong> Purchase {Math.ceil(r.deficit).toLocaleString('en-IN')} CCCs on IEX/PXIL/HPX during the October 2026 trading window to achieve compliance at an estimated cost of {fmtINR(r.defCostLow)}–{fmtINR(r.defCostHigh)}.</p>
+        </div>
+      )}
+
+      {/* Compliance milestones */}
+      <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, padding: 24, marginBottom: 16 }}>
+        <h3 style={{ fontSize: 14, fontWeight: 700, color: '#1e293b', marginBottom: 14 }}>Compliance Timeline — FY 2025-26</h3>
+        {[
+          { date: 'Before FY ends',   label: 'Hire BEE-accredited Carbon Verification Agency (ACVA) and finalise GHG monitoring plan' },
+          { date: 'March 31, 2026',   label: 'End of FY 2025-26 — GHG data collection complete; verify with ACVA' },
+          { date: 'July 31, 2026',    label: 'Submit Form A (verified GHG emission data for FY 2025-26) to BEE — CRITICAL DEADLINE', critical: true },
+          { date: 'August–September', label: 'BEE completeness check (10 working days) + technical review → NSC-ICM recommendation' },
+          { date: 'October 2026',     label: 'CCC issuance (surplus entities) or CCC purchase window (deficit entities) on IEX, PXIL, HPX', critical: true },
+          { date: '90 days after',    label: 'Environmental Compensation payment to CPCB (only if deficit uncorrected after trading window)' },
+        ].map((m, i) => (
+          <div key={i} style={{ display: 'flex', gap: 14, marginBottom: 10, alignItems: 'flex-start' }}>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: m.critical ? '#dc2626' : '#2563eb', marginTop: 5, flexShrink: 0 }} />
+            <div>
+              <span style={{ fontSize: 11, fontWeight: 700, color: m.critical ? '#dc2626' : '#2563eb', display: 'block' }}>{m.date}</span>
+              <span style={{ fontSize: 13, color: '#374151' }}>{m.label}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Regulatory citation */}
+      <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: 18, marginBottom: 20, fontSize: 12, color: '#64748b' }}>
+        <p style={{ fontWeight: 700, color: '#374151', marginBottom: 6 }}>Legal Basis</p>
+        <p>Energy Conservation (Amendment) Act 2022 · Carbon Credit Trading Scheme 2023 (S.O. 2825(E), MoP/MoEFCC)</p>
+        <p>GHG Emission Intensity Target Rules 2025 — Phase 1: Oct 8, 2025 | Phase 2: Jan 13–16, 2026</p>
+        <p>CERC (Terms and Conditions for Purchase and Sale of Carbon Credit Certificates) Regulations 2026 — Gazette: March 3, 2026</p>
+        <p style={{ marginTop: 8, fontStyle: 'italic' }}>⚠ Baseline and target GEI values are plant-specific and binding only as published in official gazette notifications. This tool is for planning and estimation only. Engage a BEE-accredited Carbon Verification Agency (ACVA) for verified MRV before submitting Form A to BEE.</p>
+      </div>
+
+      <div style={{ display: 'flex', gap: 10 }}>
+        <button onClick={() => window.print()} style={{ flex: 1, padding: '12px', background: '#f1f5f9', color: '#374151', border: '1px solid #e2e8f0', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+          <Download size={14} /> Print / Save
+        </button>
+        <button onClick={() => { setResult(null); setStep(1); setForm({ entityName: '', sector: '', subsector: '', financialYear: '2025-26', production: '', scope1: '', scope2: '', baselineGEI: '', targetGEI: '' }); }} style={{ flex: 1, padding: '12px', background: '#f1f5f9', color: '#374151', border: '1px solid #e2e8f0', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+          <RefreshCw size={14} /> New Calculation
+        </button>
+        <button onClick={() => onViewChange('platform')} style={{ flex: 1, padding: '12px', background: 'linear-gradient(135deg,#092f6f,#1db5f2)', color: '#fff', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+          Platform <ArrowRight size={14} />
+        </button>
+      </div>
+    </div>
+  );
+};
+// ───────────────────────────────────────────────────────────────────────
+
 // ─── RENEW TRACK DASHBOARD ─────────────────────────────────────────
 const RenewTrackDashboard = ({ onViewChange }) => {
   const [step, setStep] = useState(1);
@@ -1688,6 +2105,7 @@ function App() {
   else if (view === 'products') CurrentComponent = <AllProductsPage onViewChange={setView} />;
   else if (view.startsWith('solution-')) CurrentComponent = <SolutionPage sectorId={view.replace('solution-', '')} onViewChange={setView} />;
   else if (view.startsWith('product-')) CurrentComponent = <ProductPage productId={view.replace('product-', '')} onViewChange={setView} />;
+  else if (view === 'ccts') CurrentComponent = <ComplianceCoreDashboard onViewChange={setView} />;
   else if (view === 'rco') CurrentComponent = <RenewTrackDashboard onViewChange={setView} />;
   else if (view === 'app') CurrentComponent = <Dashboard formData={formData} setFormData={setFormData} loading={loading} loadingPdf={loadingPdf} status={status} onSubmit={handleSubmit} onSubmitPdf={handleSubmitPdf} onChange={handleChange} />;
   else if (view === 'admin') CurrentComponent = <AdminPanel />;
