@@ -11,7 +11,7 @@ Each document explains the government regulation, the exact data used, and every
 |---|------|-------------|--------|------------|
 | 1 | [RenewTrack-RCO.md](./RenewTrack-RCO.md) | RenewTrack — RCO Compliance Calculator | **LIVE** | MoP Notification 27 Sep 2025, EC Amendment Act 2022 |
 | 2 | CarbonFile-CBAM.md | CarbonFile — EU CBAM Report Generator | **LIVE** | EU Regulation 2023/956 |
-| 3 | ComplianceCore-CCTS.md | ComplianceCore — CCTS MRV Tool | Coming Next | EC Amendment Act 2022, GHG EI Target Rules 2025 |
+| 3 | [ComplianceCore-CCTS.md](./ComplianceCore-CCTS.md) | ComplianceCore — CCTS MRV Tool | **LIVE** | EC Amendment Act 2022, GHG EI Target Rules 2025 |
 | 4 | FuelCompute-CAFE.md | FuelCompute — CAFE 3 Compliance | Planned | BEE CAFE 3 Draft Norms 2027-32 |
 | 5 | BuildCode-ECSBC.md | BuildCode — ECSBC Compliance | Planned | ECSBC 2024, Eco-Niwas Samhita 2024 |
 | 6 | AuditPrep.md | AuditPrep — BEE Exam Prep | Planned | BEE Certification Regulations 2025 |
