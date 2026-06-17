@@ -2,6 +2,8 @@
 
 > India's energy & carbon compliance platform — CBAM, CCTS, RCO, CAFE, and ECSBC in one place.
 
+🔗 **Live demo:** [blaraa-systems.vercel.app](https://blaraa-systems.vercel.app/)
+
 BLARAA Systems is an open-source SaaS platform that helps Indian industrial companies navigate the wave of energy and carbon regulations arriving between 2025–2027. Instead of juggling spreadsheets and gazette notifications, compliance teams get purpose-built tools that turn raw plant data into audit-ready reports in minutes.
 
 ---
