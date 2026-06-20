@@ -7,7 +7,7 @@ import {
   Globe, Lock, RefreshCw, MessageSquare, Star, Send, FileText,
   ChevronDown, Leaf, Building2, Calculator, HelpCircle, CheckCircle2,
   ChevronRight, Clock, AlertTriangle, Mail, Users, Award, TrendingUp,
-  Menu, X, Truck
+  Menu, X, Truck, Plus, Trash2
 } from 'lucide-react';
 
 // ─── PLATFORM DATA ────────────────────────────────────────────────
@@ -162,7 +162,7 @@ const PRODUCTS = {
     name: 'FuelCompute',
     fullName: 'FuelCompute CAFE',
     subtitle: 'Corporate Average Fuel Economy Compliance',
-    status: 'soon',
+    status: 'live',
     icon: Truck,
     accentColor: '#dc2626',
     bgColor: '#fef2f2',
@@ -1978,7 +1978,7 @@ const Navbar = ({ onViewChange, scrolled }) => {
           </div>
         </button>
         <div className="nav-desktop">
-          {[['solutions', 'Solutions'], ['products', 'Products'], ['feedback', 'Contact']].map(([view, label]) => (
+          {[['solutions', 'Solutions'], ['products', 'Products'], ['cafe', 'CAFE'], ['feedback', 'Contact']].map(([view, label]) => (
             <button key={view} className="nav-link" onClick={() => close(view)} style={{ color: scrolled ? 'var(--slate-dark)' : 'rgba(255,255,255,0.92)' }}>{label}</button>
           ))}
           <button className="nav-cta" onClick={() => close('app')}>Launch CBAM →</button>
@@ -1989,7 +1989,7 @@ const Navbar = ({ onViewChange, scrolled }) => {
       </div>
       {mobileOpen && (
         <div className="mobile-menu">
-          {[['solutions', 'Solutions'], ['products', 'All Products'], ['app', 'Launch CBAM Tool'], ['feedback', 'Contact']].map(([view, label]) => (
+          {[['solutions', 'Solutions'], ['products', 'All Products'], ['cafe', 'CAFE Calculator'], ['app', 'Launch CBAM Tool'], ['feedback', 'Contact']].map(([view, label]) => (
             <button key={view} className="mobile-menu-item" onClick={() => close(view)}>{label}</button>
           ))}
         </div>
@@ -2053,6 +2053,511 @@ const Footer = ({ onViewChange }) => (
   </footer>
 );
 
+// ─── CAFE 3 GOVERNMENT DATA ───────────────────────────────────────────────
+// Source: BEE Draft CAFE 3 Notification, MoRTH / BEE, 2024-25
+// Corporate Average Fuel Economy (CAFE) norms for FY 2027–2032
+// Target: Corporate Average CO₂ (g/km) for passenger cars and light duty vehicles
+// Formula: CAFE = Σ(sales_i) / Σ(sales_i / FE_i)  [harmonic mean, sales-weighted]
+// CO₂ equivalent: CO2_g_per_km = 2392 / FE_km_per_litre  (petrol, NEDC cycle)
+//   (Source: EU 23.2 kg CO2/litre petrol × 1000 / NEDC correction ≈ 2392)
+// For diesel: CO2_g_per_km = 2640 / FE_km_per_litre
+const CAFE3_TARGETS = {
+  // Phase (year) : Corporate average CO₂ target (g CO₂ / km)
+  // Passenger Cars (PC) targets — BEE CAFE 3 draft
+  '2027-28': { pc: 113, ldv: 130 },
+  '2028-29': { pc: 108, ldv: 124 },
+  '2029-30': { pc: 103, ldv: 118 },
+  '2030-31': { pc: 99,  ldv: 113 },
+  '2031-32': { pc: 95,  ldv: 108 },
+};
+
+const CAFE_FUEL_TYPES = [
+  { id: 'petrol',  label: 'Petrol / CNG',    co2Factor: 2392 },  // g CO2 / km per km/l
+  { id: 'diesel',  label: 'Diesel',           co2Factor: 2640 },
+  { id: 'hybrid',  label: 'Petrol Hybrid',    co2Factor: 1910 },  // ~20% efficiency gain
+  { id: 'ev',      label: 'Battery EV (BEV)', co2Factor: 0    },  // Zero tailpipe
+  { id: 'phev',    label: 'Plug-in Hybrid',   co2Factor: 1200 },
+];
+
+const CAFE_VEHICLE_TYPES = [
+  { id: 'pc',  label: 'Passenger Car (PC)' },
+  { id: 'ldv', label: 'Light Duty Vehicle (LDV)' },
+];
+
+const CAFE_PENALTY = 25000; // ₹ per g/km excess (BEE proxy estimate, per vehicle sold)
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─── CAFE CALCULATOR COMPONENT ───────────────────────────────────────────────
+const CAFECalculator = () => {
+  const [companyName, setCompanyName]   = useState('');
+  const [vehicleType, setVehicleType]   = useState('pc');
+  const [targetYear, setTargetYear]     = useState('2027-28');
+  const [models, setModels]             = useState([
+    { id: 1, name: '', fuelType: 'petrol', salesVolume: '', fuelEconomy: '' },
+  ]);
+  const [result, setResult]             = useState(null);
+  const [error, setError]               = useState('');
+
+  const addModel = () =>
+    setModels(prev => [
+      ...prev,
+      { id: Date.now(), name: '', fuelType: 'petrol', salesVolume: '', fuelEconomy: '' },
+    ]);
+
+  const removeModel = (id) =>
+    setModels(prev => prev.filter(m => m.id !== id));
+
+  const updateModel = (id, field, value) =>
+    setModels(prev => prev.map(m => m.id === id ? { ...m, [field]: value } : m));
+
+  const calculate = () => {
+    setError('');
+    setResult(null);
+
+    // Validate inputs
+    if (!companyName.trim()) { setError('Please enter your company name.'); return; }
+    const parsed = models.map(m => ({
+      ...m,
+      sales: parseInt(m.salesVolume, 10),
+      fe: parseFloat(m.fuelEconomy),
+    }));
+    if (parsed.some(m => !m.name.trim() || isNaN(m.sales) || m.sales <= 0 || isNaN(m.fe) || m.fe <= 0)) {
+      setError('Please fill all vehicle model fields with valid positive numbers.');
+      return;
+    }
+
+    // Harmonic mean: CAFE = Σ(sales_i) / Σ(sales_i / FE_i)
+    const totalSales   = parsed.reduce((sum, m) => sum + m.sales, 0);
+    const weightedSum  = parsed.reduce((sum, m) => sum + m.sales / m.fe, 0);
+    const corporateCAFE_kpl = totalSales / weightedSum;   // km/l
+
+    // CO₂ per model: g/km = co2Factor / fe
+    const modelsWithCO2 = parsed.map(m => {
+      const fuelDef = CAFE_FUEL_TYPES.find(f => f.id === m.fuelType);
+      const co2_g_km = fuelDef.co2Factor > 0 ? fuelDef.co2Factor / m.fe : 0;
+      return { ...m, co2_g_km };
+    });
+
+    // Fleet average CO₂: weighted by sales across all models
+    // For EVs (co2Factor=0), co2_g_km = 0
+    const fleetCO2_g_km = modelsWithCO2.reduce(
+      (sum, m) => sum + (m.co2_g_km * m.sales),
+      0
+    ) / totalSales;
+
+    const target  = CAFE3_TARGETS[targetYear];
+    const limit   = target[vehicleType];   // g CO₂ / km
+    const gap_g_km = fleetCO2_g_km - limit;
+    const isCompliant = gap_g_km <= 0;
+
+    // Penalty estimate (non-compliant only)
+    const penaltyPerVehicle = isCompliant ? 0 : Math.ceil(gap_g_km) * CAFE_PENALTY;
+    const totalPenalty      = penaltyPerVehicle * totalSales;
+
+    setResult({
+      corporateCAFE_kpl,
+      fleetCO2_g_km,
+      target: limit,
+      gap_g_km,
+      isCompliant,
+      totalSales,
+      penaltyPerVehicle,
+      totalPenalty,
+      modelsWithCO2,
+    });
+  };
+
+  const reset = () => {
+    setResult(null);
+    setCompanyName('');
+    setModels([{ id: 1, name: '', fuelType: 'petrol', salesVolume: '', fuelEconomy: '' }]);
+    setError('');
+  };
+
+  const fmtINR_local = (n) => {
+    if (n >= 1e7)  return `₹${(n / 1e7).toFixed(2)} Cr`;
+    if (n >= 1e5)  return `₹${(n / 1e5).toFixed(2)} L`;
+    return `₹${Math.round(n).toLocaleString('en-IN')}`;
+  };
+
+  return (
+    <div className="animate-in slide-in-from-bottom-4 duration-500 min-h-screen"
+      style={{ background: 'linear-gradient(135deg, #fff7ed 0%, #fef2f2 50%, #fff 100%)' }}>
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-12">
+
+        {/* ── Header ── */}
+        <div className="mb-10 reveal">
+          <span className="inline-flex items-center gap-2 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide mb-4"
+            style={{ background: '#fef2f2', color: '#dc2626' }}>
+            <Truck size={12} /> FuelCompute CAFE · BEE India
+          </span>
+          <h1 className="text-4xl font-extrabold text-slate-900 mb-3"
+            style={{ letterSpacing: '-0.02em' }}>CAFE 3 Compliance Calculator</h1>
+          <p className="text-slate-600 text-lg leading-relaxed max-w-2xl">
+            Calculate your Corporate Average Fuel Economy against BEE CAFE 3 targets (FY 2027–2032).
+            Uses the <strong>sales-weighted harmonic mean</strong> formula — the same methodology
+            prescribed by BEE / MoRTH.
+          </p>
+          <div className="mt-4 p-3 rounded-xl text-sm flex items-start gap-2"
+            style={{ background: '#fffbeb', border: '1px solid #fde68a', color: '#92400e' }}>
+            <AlertTriangle size={15} className="mt-0.5 shrink-0" />
+            <span>
+              <strong>Regulatory source:</strong> BEE CAFE 3 draft notification (MoRTH), Corporate
+              Average CO₂ targets for FY 2027–32. CO₂ conversion: 2392 g/km per km/l (petrol, NEDC),
+              2640 g/km per km/l (diesel). Penalty estimate: ₹25,000 per g/km excess per vehicle sold.
+            </span>
+          </div>
+        </div>
+
+        {!result ? (
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border p-8"
+            style={{ borderColor: '#fecaca' }}>
+
+            {/* ── Company + Settings ── */}
+            <div className="grid md:grid-cols-3 gap-5 mb-8">
+              <div className="md:col-span-1">
+                <label className="block text-xs font-bold uppercase tracking-wider mb-2"
+                  style={{ color: '#dc2626' }}>Company Name</label>
+                <input
+                  value={companyName}
+                  onChange={e => setCompanyName(e.target.value)}
+                  placeholder="e.g. Tata Motors Ltd"
+                  className="w-full px-4 py-3 rounded-xl border outline-none transition"
+                  style={{ borderColor: '#fecaca', background: '#fff7ed' }}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider mb-2"
+                  style={{ color: '#dc2626' }}>Vehicle Category</label>
+                <select
+                  value={vehicleType}
+                  onChange={e => setVehicleType(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border outline-none transition"
+                  style={{ borderColor: '#fecaca', background: '#fff7ed' }}>
+                  {CAFE_VEHICLE_TYPES.map(v => (
+                    <option key={v.id} value={v.id}>{v.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider mb-2"
+                  style={{ color: '#dc2626' }}>Target Year (CAFE 3 Cycle)</label>
+                <select
+                  value={targetYear}
+                  onChange={e => setTargetYear(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border outline-none transition"
+                  style={{ borderColor: '#fecaca', background: '#fff7ed' }}>
+                  {Object.keys(CAFE3_TARGETS).map(yr => (
+                    <option key={yr} value={yr}>FY {yr}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* ── CO₂ Target Banner ── */}
+            <div className="flex items-center gap-3 mb-8 p-4 rounded-xl"
+              style={{ background: '#fef2f2', border: '1px solid #fecaca' }}>
+              <Award size={20} style={{ color: '#dc2626' }} />
+              <span className="text-sm font-semibold" style={{ color: '#7f1d1d' }}>
+                CAFE 3 CO₂ Target for FY {targetYear} &nbsp;·&nbsp;
+                {vehicleType === 'pc' ? 'Passenger Car' : 'Light Duty Vehicle'}:
+                &nbsp;<strong style={{ color: '#dc2626', fontSize: '1.05rem' }}>
+                  {CAFE3_TARGETS[targetYear][vehicleType]} g CO₂/km
+                </strong>
+              </span>
+            </div>
+
+            {/* ── Vehicle Model Table ── */}
+            <h3 className="text-xs font-bold uppercase tracking-wider mb-4 flex items-center gap-2"
+              style={{ color: '#dc2626' }}>
+              <Factory size={13} /> Fleet Models
+            </h3>
+            <div className="overflow-x-auto mb-4">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left" style={{ color: '#6b7280' }}>
+                    <th className="pb-3 pr-4 font-semibold">Model Name</th>
+                    <th className="pb-3 pr-4 font-semibold">Fuel Type</th>
+                    <th className="pb-3 pr-4 font-semibold">Annual Sales (units)</th>
+                    <th className="pb-3 pr-4 font-semibold">Fuel Economy (km/l)</th>
+                    <th className="pb-3 font-semibold"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y" style={{ borderColor: '#f3f4f6' }}>
+                  {models.map((m, idx) => (
+                    <tr key={m.id}>
+                      <td className="py-3 pr-4">
+                        <input
+                          value={m.name}
+                          onChange={e => updateModel(m.id, 'name', e.target.value)}
+                          placeholder={`Model ${idx + 1}`}
+                          className="w-full px-3 py-2 rounded-lg border outline-none text-sm"
+                          style={{ borderColor: '#fecaca', background: '#fff7ed' }}
+                        />
+                      </td>
+                      <td className="py-3 pr-4">
+                        <select
+                          value={m.fuelType}
+                          onChange={e => updateModel(m.id, 'fuelType', e.target.value)}
+                          className="w-full px-3 py-2 rounded-lg border outline-none text-sm"
+                          style={{ borderColor: '#fecaca', background: '#fff7ed' }}>
+                          {CAFE_FUEL_TYPES.map(f => (
+                            <option key={f.id} value={f.id}>{f.label}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="py-3 pr-4">
+                        <input
+                          type="number" min="1"
+                          value={m.salesVolume}
+                          onChange={e => updateModel(m.id, 'salesVolume', e.target.value)}
+                          placeholder="e.g. 45000"
+                          className="w-full px-3 py-2 rounded-lg border outline-none text-sm font-mono"
+                          style={{ borderColor: '#fecaca', background: '#fff7ed' }}
+                        />
+                      </td>
+                      <td className="py-3 pr-4">
+                        <input
+                          type="number" min="0.1" step="0.1"
+                          value={m.fuelEconomy}
+                          onChange={e => updateModel(m.id, 'fuelEconomy', e.target.value)}
+                          placeholder="e.g. 21.4"
+                          className="w-full px-3 py-2 rounded-lg border outline-none text-sm font-mono"
+                          style={{ borderColor: '#fecaca', background: '#fff7ed' }}
+                        />
+                      </td>
+                      <td className="py-3">
+                        {models.length > 1 && (
+                          <button onClick={() => removeModel(m.id)}
+                            className="p-2 rounded-lg transition hover:bg-red-50" style={{ color: '#ef4444' }}>
+                            <Trash2 size={15} />
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <button onClick={addModel}
+              className="flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-xl transition mb-8"
+              style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca' }}>
+              <Plus size={15} /> Add Vehicle Model
+            </button>
+
+            {error && (
+              <div className="mb-4 p-3 rounded-xl text-sm flex items-center gap-2"
+                style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca' }}>
+                <AlertTriangle size={15} /> {error}
+              </div>
+            )}
+
+            <button onClick={calculate}
+              className="w-full py-4 rounded-xl font-bold text-lg text-white shadow-lg transition hover:shadow-xl hover:scale-[1.01] flex items-center justify-center gap-2"
+              style={{ background: 'linear-gradient(135deg, #dc2626, #b91c1c)' }}>
+              <Calculator size={20} /> Calculate CAFE Compliance
+            </button>
+          </div>
+        ) : (
+          /* ── RESULTS ── */
+          <div className="space-y-6">
+            {/* Compliance Badge */}
+            <div className={`rounded-2xl p-8 text-center shadow-xl border-2 ${
+              result.isCompliant
+                ? 'bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-300'
+                : 'bg-gradient-to-br from-red-50 to-orange-50 border-red-300'
+            }`}>
+              <div className="text-5xl mb-3">{result.isCompliant ? '✅' : '⚠️'}</div>
+              <h2 className="text-3xl font-extrabold mb-1"
+                style={{ color: result.isCompliant ? '#065f46' : '#7f1d1d' }}>
+                {result.isCompliant ? 'CAFE Compliant' : 'Non-Compliant'}
+              </h2>
+              <p className="text-lg font-semibold" style={{ color: result.isCompliant ? '#047857' : '#b91c1c' }}>
+                {companyName} · FY {targetYear}
+              </p>
+            </div>
+
+            {/* Key Metrics */}
+            <div className="grid md:grid-cols-3 gap-5">
+              {[
+                {
+                  label: 'Fleet Avg CO₂',
+                  value: `${result.fleetCO2_g_km.toFixed(1)} g/km`,
+                  sub: `Target: ${result.target} g/km`,
+                  color: result.isCompliant ? '#065f46' : '#b91c1c',
+                  bg: result.isCompliant ? '#ecfdf5' : '#fef2f2',
+                  border: result.isCompliant ? '#6ee7b7' : '#fecaca',
+                },
+                {
+                  label: 'Corporate CAFE',
+                  value: `${result.corporateCAFE_kpl.toFixed(2)} km/l`,
+                  sub: 'Sales-weighted harmonic mean',
+                  color: '#1e40af',
+                  bg: '#eff6ff',
+                  border: '#bfdbfe',
+                },
+                {
+                  label: result.isCompliant ? 'Surplus vs Target' : 'Excess CO₂',
+                  value: `${Math.abs(result.gap_g_km).toFixed(1)} g/km`,
+                  sub: result.isCompliant ? 'Below limit — compliant' : 'Above limit — penalty applies',
+                  color: result.isCompliant ? '#065f46' : '#b91c1c',
+                  bg: result.isCompliant ? '#ecfdf5' : '#fef2f2',
+                  border: result.isCompliant ? '#6ee7b7' : '#fecaca',
+                },
+              ].map((m, i) => (
+                <div key={i} className="rounded-2xl p-6 border"
+                  style={{ background: m.bg, borderColor: m.border }}>
+                  <p className="text-xs font-bold uppercase tracking-wider mb-1" style={{ color: m.color }}>{m.label}</p>
+                  <p className="text-3xl font-extrabold" style={{ color: m.color }}>{m.value}</p>
+                  <p className="text-xs mt-1" style={{ color: m.color, opacity: 0.75 }}>{m.sub}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Penalty estimate (non-compliant) */}
+            {!result.isCompliant && (
+              <div className="rounded-2xl p-6 border"
+                style={{ background: '#fffbeb', borderColor: '#fde68a' }}>
+                <h3 className="font-bold text-amber-800 mb-3 flex items-center gap-2">
+                  <TrendingUp size={17} /> Estimated Penalty Exposure
+                </h3>
+                <div className="grid md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-amber-700">Excess CO₂:</span>
+                    <strong className="ml-2 text-amber-900">{result.gap_g_km.toFixed(1)} g/km</strong>
+                  </div>
+                  <div>
+                    <span className="text-amber-700">Penalty rate (BEE proxy):</span>
+                    <strong className="ml-2 text-amber-900">₹25,000 / g/km / vehicle</strong>
+                  </div>
+                  <div>
+                    <span className="text-amber-700">Per vehicle penalty:</span>
+                    <strong className="ml-2 text-amber-900">{fmtINR_local(result.penaltyPerVehicle)}</strong>
+                  </div>
+                  <div>
+                    <span className="text-amber-700">Total fleet exposure ({result.totalSales.toLocaleString('en-IN')} units):</span>
+                    <strong className="ml-2 text-amber-900">{fmtINR_local(result.totalPenalty)}</strong>
+                  </div>
+                </div>
+                <p className="text-xs mt-3" style={{ color: '#92400e', opacity: 0.8 }}>
+                  * Penalty estimate based on BEE proxy of ₹25,000/g/km/vehicle. Final
+                  penalty structure subject to official BEE notification.
+                </p>
+              </div>
+            )}
+
+            {/* Per-model breakdown */}
+            <div className="bg-white rounded-2xl border shadow-sm overflow-hidden"
+              style={{ borderColor: '#e5e7eb' }}>
+              <div className="px-6 py-4 border-b" style={{ borderColor: '#f3f4f6' }}>
+                <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                  <BarChart3 size={17} /> Vehicle Model Breakdown
+                </h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead style={{ background: '#f9fafb' }}>
+                    <tr className="text-left" style={{ color: '#6b7280' }}>
+                      <th className="px-6 py-3 font-semibold">Model</th>
+                      <th className="px-6 py-3 font-semibold">Fuel</th>
+                      <th className="px-6 py-3 text-right font-semibold">Sales</th>
+                      <th className="px-6 py-3 text-right font-semibold">FE (km/l)</th>
+                      <th className="px-6 py-3 text-right font-semibold">CO₂ (g/km)</th>
+                      <th className="px-6 py-3 text-right font-semibold">vs Target</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y" style={{ borderColor: '#f3f4f6' }}>
+                    {result.modelsWithCO2.map((m, i) => {
+                      const diff = m.co2_g_km - result.target;
+                      const fuelLabel = CAFE_FUEL_TYPES.find(f => f.id === m.fuelType)?.label || m.fuelType;
+                      return (
+                        <tr key={i} className="hover:bg-slate-50 transition">
+                          <td className="px-6 py-4 font-semibold text-slate-900">{m.name}</td>
+                          <td className="px-6 py-4 text-slate-600">{fuelLabel}</td>
+                          <td className="px-6 py-4 text-right font-mono">{m.sales.toLocaleString('en-IN')}</td>
+                          <td className="px-6 py-4 text-right font-mono">{m.fe.toFixed(1)}</td>
+                          <td className="px-6 py-4 text-right font-mono">{m.co2_g_km.toFixed(1)}</td>
+                          <td className="px-6 py-4 text-right font-mono font-bold"
+                            style={{ color: diff <= 0 ? '#059669' : '#dc2626' }}>
+                            {diff <= 0 ? `−${Math.abs(diff).toFixed(1)}` : `+${diff.toFixed(1)}`}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                  <tfoot style={{ background: '#f9fafb', borderTop: '2px solid #e5e7eb' }}>
+                    <tr>
+                      <td className="px-6 py-4 font-bold text-slate-900" colSpan={2}>Fleet Total / Average</td>
+                      <td className="px-6 py-4 text-right font-bold font-mono">{result.totalSales.toLocaleString('en-IN')}</td>
+                      <td className="px-6 py-4 text-right font-bold font-mono">{result.corporateCAFE_kpl.toFixed(2)}</td>
+                      <td className="px-6 py-4 text-right font-bold font-mono"
+                        style={{ color: result.isCompliant ? '#059669' : '#dc2626' }}>
+                        {result.fleetCO2_g_km.toFixed(1)}
+                      </td>
+                      <td className="px-6 py-4 text-right font-bold font-mono"
+                        style={{ color: result.isCompliant ? '#059669' : '#dc2626' }}>
+                        {result.gap_g_km <= 0
+                          ? `−${Math.abs(result.gap_g_km).toFixed(1)}`
+                          : `+${result.gap_g_km.toFixed(1)}`}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-4 flex-wrap">
+              <button onClick={reset}
+                className="flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition"
+                style={{ background: '#f3f4f6', color: '#374151' }}>
+                <RefreshCw size={16} /> New Calculation
+              </button>
+              <button
+                onClick={() => {
+                  const lines = [
+                    `BLARAA Systems — FuelCompute CAFE 3 Report`,
+                    `Company: ${companyName}`,
+                    `Target Year: FY ${targetYear}`,
+                    `Vehicle Category: ${vehicleType === 'pc' ? 'Passenger Car' : 'LDV'}`,
+                    `CAFE 3 CO₂ Target: ${result.target} g/km`,
+                    `Fleet Average CO₂: ${result.fleetCO2_g_km.toFixed(1)} g/km`,
+                    `Corporate CAFE: ${result.corporateCAFE_kpl.toFixed(2)} km/l`,
+                    `Compliance Status: ${result.isCompliant ? 'COMPLIANT' : 'NON-COMPLIANT'}`,
+                    `Gap vs Target: ${result.gap_g_km.toFixed(1)} g/km`,
+                    ``,
+                    `--- Model Breakdown ---`,
+                    ...result.modelsWithCO2.map(
+                      m => `${m.name} | Sales: ${m.sales} | FE: ${m.fe} km/l | CO₂: ${m.co2_g_km.toFixed(1)} g/km`
+                    ),
+                    ``,
+                    `Generated by BLARAA Systems · https://blaraa-systems.vercel.app`,
+                    `Methodology: BEE CAFE 3 draft notification (MoRTH), harmonic mean formula`,
+                  ].join('\n');
+                  const blob = new Blob([lines], { type: 'text/plain' });
+                  const url  = URL.createObjectURL(blob);
+                  const a    = document.createElement('a');
+                  a.href     = url;
+                  a.download = `${companyName.replace(/\s+/g, '_')}_CAFE3_Report.txt`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}
+                className="flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white transition hover:scale-[1.02]"
+                style={{ background: 'linear-gradient(135deg,#dc2626,#b91c1c)' }}>
+                <Download size={16} /> Export Report (.txt)
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+// ─────────────────────────────────────────────────────────────────────────────
+
+
+
 // ─── APP ────────────────────────────────────────────────────────────
 function App() {
   const [view, setView] = useState('platform');
@@ -2110,6 +2615,7 @@ function App() {
   else if (view === 'app') CurrentComponent = <Dashboard formData={formData} setFormData={setFormData} loading={loading} loadingPdf={loadingPdf} status={status} onSubmit={handleSubmit} onSubmitPdf={handleSubmitPdf} onChange={handleChange} />;
   else if (view === 'admin') CurrentComponent = <AdminPanel />;
   else if (view === 'feedback') CurrentComponent = <FeedbackForm />;
+  else if (view === 'cafe') CurrentComponent = <CAFECalculator />;
 
   return (
     <div style={{ minHeight: '100vh', background: '#fff', fontFamily: 'var(--font-body)', display: 'flex', flexDirection: 'column' }}>
