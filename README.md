@@ -87,7 +87,7 @@ BLARAA-SYSTEMS/
 │   └── src/App.js
 ├── backend/           # FastAPI — CBAM calculator + PDF generator
 ├── docs/              # Service docs mapped to government sources
-└── .github/workflows/ # CI/CD
+└── .github/workflows/ # Frontend auto-deploy to GitHub Pages (no test suite yet)
 ```
 
 ---
